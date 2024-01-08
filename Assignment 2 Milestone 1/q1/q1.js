@@ -7,7 +7,6 @@ const BLACK = 0;
 const WHITE = 255;
 
 const burgers = [];
-
 const numberOfBurgers = 4;
 
 let burgerSprite;
@@ -79,6 +78,7 @@ function initialiseBurgers() { // make velocity skewed towards x
     for (let i = 0; i < numberOfBurgers; i++) {
         let x = randomiseStaringPositions('x');
         let y = randomiseStaringPositions('y');
+        let d = randomiseStartingDirection();
         let burger = new Sprite(x, y);
 
         burger.speed = Burger.speed;
@@ -89,9 +89,9 @@ function initialiseBurgers() { // make velocity skewed towards x
         burger.bounciness = 1;
         burger.friction = 0;
         burger.drag = 0;
-        burger.direction = random(360);
+        burger.direction = d;
 
-        //burger.debug = true;
+        burger.debug = true;
 
         burgers.push(burger);
     }
@@ -110,8 +110,8 @@ function lateUpdate() {
 
 function boundaryCollision() { // still weird especially with moving ralph
     let burgerInMouth = false;
-    for (i = 0; i < numberOfBurgers; i++) {
-        if (burgers[i].x < Ralph.x + Ralph.width) {
+    for (i = 0; i < numberOfBurgers; i++) { 
+        if (burgers[i].x < Ralph.x + Ralph.width - 1) {
             burgerInMouth = true;
         } else {
             burgerInMouth = false;
@@ -119,23 +119,23 @@ function boundaryCollision() { // still weird especially with moving ralph
 
         if (burgers[i].x + (burgers[i].w / 2) >= CANVASWIDTH) { // x > right wall
             burgers[i].vel.x *= -1;
-        } else if (burgers[i].x - (burgers[i].w / 2) <= Ralph.x + Ralph.width) {
-            if (burgers[i].y - (burgers[i].h / 2) <= Ralph.mouth.y ||
-            burgers[i].y - (burgers[i].h / 2) >= Ralph.mouth.y + Ralph.jawPosition) {
+        } else if (burgers[i].x - (burgers[i].w / 2) < Ralph.x + Ralph.width) {
+            if (burgers[i].y - (burgers[i].h / 2) < Ralph.mouth.y ||
+            burgers[i].y - (burgers[i].h / 2) > Ralph.mouth.y + Ralph.jawPosition) {
                 burgers[i].vel.x *= -1;
             } 
         }      
 
-        if (burgers[i].y + (burgers[i].h / 2) >= CANVASHEIGHT) {
+        if (burgers[i].y + (burgers[i].h / 2) >= CANVASHEIGHT) { // Top boundary
             burgers[i].vel.y *= -1;
-        } else if (burgers[i].y - (burgers[i].h / 2) <= 0) {
+        } else if (burgers[i].y - (burgers[i].h / 2) <= 0) { // Bottom boundary
             burgers[i].vel.y *= -1;
         }
 
         if (burgerInMouth == true) {
             if (burgers[i].y - (burgers[i].h / 2) <= Ralph.mouth.y) { // y on roof of mouth
                 burgers[i].vel.y *= -1;
-            } if (burgers[i].y - (burgers[i].h / 2) >= Ralph.mouth.y + Ralph.jawPosition) { // y on bottom of mouth
+            } if (burgers[i].y - (burgers[i].h / 2) >= Ralph.mouth.height + Ralph.jawPosition) { // y on bottom of mouth
                 burgers[i].vel.y *= -1;
             }
         }
@@ -161,6 +161,21 @@ function randomiseStaringPositions(i) { // fix could do 2 functions for x y
     return 0;
 }
 
+function randomiseStartingDirection() { //45 - 135, 225-315 excluded
+    let r;
+    r = random(360); 
+    if (r > 45 && r < 135) {
+        r += 90;
+    } else if (r > 225 && r < 315) {
+        r += 90
+    }
+
+    if (r > 360) {
+        r -= 360;
+    }
+    return r;
+}
+
 function getJawPosition() {
     let w = CANVASWIDTH;
     for (i = 0; i < numberOfBurgers; i++) {
@@ -183,9 +198,11 @@ function getJawPosition() {
 
 function eatBurger(b) {
 
-    score ++;
+    score++;
     burgers[b].x = CANVASWIDTH /2;
     burgers[b].y = CANVASHEIGHT / 2;
+
+    burgers[b].direction = randomiseStartingDirection();
 
 
 
