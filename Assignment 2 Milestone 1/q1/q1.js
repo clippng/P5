@@ -11,7 +11,6 @@ const WHITE = 255;
 // a scalar around the edge of a circle
 
 const burgers = [];
-const burgersInfo = []; //Extra info for each member of burgers
 const numberOfBurgers = 4;
 
 let burgerSprite;
@@ -129,8 +128,6 @@ function initialiseBurgers() { // make velocity skewed towards x
 
         //burger.debug = true;
 
-        burgersInfo.push(Burger);
-
         burgers.push(burger);
     }
 }
@@ -166,22 +163,22 @@ function update() {
 function boundaryCollision() { // still weird especially with moving ralph
     for (i = 0; i < numberOfBurgers; i++) { 
         if (burgers[i].x - (burgers[i].w / 2)< Ralph.x + Ralph.width - 10) {
-            burgersInfo[i].inMouth = true;
+            burgers[i].inMouth = true;
         } else {
-            burgersInfo[i].inMouth = false;
+            burgers[i].inMouth = false;
         }
 
         if (burgers[i].x - (burgers[i].w / 2) < Ralph.x + Ralph.width && burgers[i].y - (burgers[i].h / 2) < Ralph.mouth.y && // Hits Ralph above mouth
-            burgersInfo[i].inMouth == false) {
+            burgers[i].inMouth == false) {
             burgers[i].x = Ralph.x + Ralph.width + (burgers[i].w / 2)
             burgers[i].vel.x *= -1;
         } else if (burgers[i].x - (burgers[i].w / 2) < Ralph.x + Ralph.width &&  // Hits Ralph below mouth
-            burgers[i].y + (burgers[i].h / 2 ) > Ralph.mouth.y + Ralph.jawPosition && burgersInfo[i].inMouth == false) {
+            burgers[i].y + (burgers[i].h / 2 ) > Ralph.mouth.y + Ralph.jawPosition && burgers[i].inMouth == false) {
             burgers[i].x = Ralph.x + Ralph.width + (burgers[i].w / 2)
             burgers[i].vel.x *= -1;
         }
 
-        if (burgersInfo[i].inMouth == true) {
+        if (burgers[i].inMouth == true) {
             if (burgers[i].y - (burgers[i].h / 2) < Ralph.mouth.y) {
                 burgers[i].y = Ralph.mouth.y + (burgers[i].h / 2);
                 burgers[i].vel.y *= -1;

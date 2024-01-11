@@ -1,10 +1,68 @@
 {
-    "layouts": [
-        {
-            "one": [1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 0]  
-        },
-        {
-            "two": [0, 1, 1, 0, 1, 0, 0, 1, 0]
-        }
-    ]
+"layout": [
+    {
+        "type": "platform",
+        "position": 100
+    },
+    {
+        "type": "spike",
+        "position": 140
+    },
+    {
+        "type": "platform",
+        "position": 150
+    },
+    {
+        "type": "platform",
+        "position": 50
+    },
+    {
+        "type": "platform",
+        "position": 157
+    },
+    {
+        "type": "platform",
+        "position": 55
+    },
+    {
+        "type": "platform",
+        "position": 146
+    },
+    {
+        "type": "spike",
+        "position": 100
+    },
+    {
+        "type": "platform",
+        "position": 133
+    },
+    {
+        "type": "platform",
+        "position": 53
+    },
+    {
+        "type": "platform",
+        "position": 72
+    },
+    {
+        "type": "spike",
+        "position": 170
+    },
+    {
+        "type": "platform",
+        "position": 56
+    },
+    {
+        "type": "platform",
+        "position": 100
+    },
+    {
+        "type": "platform",
+        "position": 122
+    },
+    {
+        "type": "platform",
+        "position": 145
+    }
+  ]
 }
