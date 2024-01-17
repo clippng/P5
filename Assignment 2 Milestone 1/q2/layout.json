@@ -2,67 +2,83 @@
 "layout": [
     {
         "type": "platform",
-        "position": 100
+        "position": 100,
+        "heart": false
     },
     {
         "type": "spike",
-        "position": 140
+        "position": 140,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 150
+        "position": 150,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 50
+        "position": 50,
+        "heart": true
     },
     {
         "type": "platform",
-        "position": 157
+        "position": 157,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 55
+        "position": 55,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 146
+        "position": 146,
+        "heart": false
     },
     {
         "type": "spike",
-        "position": 100
+        "position": 100,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 133
+        "position": 160,
+        "heart": true
     },
     {
         "type": "platform",
-        "position": 53
+        "position": 53,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 72
+        "position": 72,
+        "heart": false
     },
     {
         "type": "spike",
-        "position": 170
+        "position": 170,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 56
+        "position": 56,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 100
+        "position": 100,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 122
+        "position": 122,
+        "heart": false
     },
     {
         "type": "platform",
-        "position": 145
+        "position": 145,
+        "heart": false
     }
   ]
 }

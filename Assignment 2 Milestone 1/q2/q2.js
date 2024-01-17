@@ -11,13 +11,12 @@ const numberOfPlatforms = 6;
 const BACKGROUNDCOLOUR = [189, 185, 89];
 const NONBLINDINGCOLOUR = 150
 
-let ballSprite,death1Sprite, death2Sprite, heartSprite, livesSprite,
+let ballSprite, heartSprite, livesSprite,
 platformSprite, floorSpikesSprite, roofSpikesSprite
-
 
 let topBoundary, leftBoundary, rightBoundary, leftWall, rightWall;
 
-let speed = 0.2; // might want to normalise this ie speed / 10 = actual speed 1 would be slowest 10 would be fastest
+let speed = 0.25; // might want to normalise this ie speed / 10 = actual speed 1 would be slowest 10 would be fastest
 
 let Spikes;
 
@@ -25,13 +24,15 @@ let font;
 
 let ball;
 
+let Heart, heart;
+
 let layout;
 
 let Platforms;
 
 let obstacle = 0;
 
-let wallSpacing = CANVASHEIGHT / 7;
+let wallSpacing;
 
 let wallPositions = []
 
@@ -39,23 +40,27 @@ let livesSymbol
 
 let previousY;
 
+let groundSensor;
+
+let respawnTimer;
+
 let ScoreBoard = {
     lives: 2,
-    score: 0, // int
+    score: 0, 
     scorePosition: 0,
 }
 
 function preload() {
     ballSprite = loadImage("Sprites/ball.png");
-    platformSprite = loadImage("Sprites/platform.png")
-    roofSpikesSprite = loadImage("Sprites/topSpikes.png")
-
-    spikeSprite = loadImage("Sprites/spikes.png")
+    platformSprite = loadImage("Sprites/platform.png");
+    roofSpikesSprite = loadImage("Sprites/topSpikes.png");
+    spikeSprite = loadImage("Sprites/spikes.png");
     livesSprite = loadImage("Sprites/lives.png");
+    heartSprite = loadImage("Sprites/heart.png");
 
-    gameOver = loadImage("Sprites/gameOver.png")
+    gameOver = loadImage("Sprites/gameOver.png");
 
-    font = loadFont('joystix-monospace.otf')
+    font = loadFont('joystix-monospace.otf');
     //font = loadFont('PressStart2P-vaV7.ttf')
 
     layout = loadJSON('layout.json');
@@ -63,11 +68,10 @@ function preload() {
 
 function setup() {
     new Canvas(CANVASWIDTH, CANVASHEIGHT, 'pixelated');
-    background(NONBLINDINGCOLOUR);
+    background(BACKGROUNDCOLOUR);
 
     allSprites.pixelPerfect = true;
-   
-    world.gravity.y = 1 // IDK bro i hate gravity but it makes the physics so easy
+
     //loadSprites();
     loadGUI();
     initialisePlatforms();
@@ -75,14 +79,15 @@ function setup() {
     initialiseBall();
     initialiseScoreBoard();
     initialiseWalls();
+    initialiseHearts();
 }
 
 function draw() {
-    background(NONBLINDINGCOLOUR);
+    background(BACKGROUNDCOLOUR);
     update();
 
     stroke(0);
-    strokeWeight(4);
+    strokeWeight(2);
     strokeCap(PROJECT);
 
     //line(leftBoundary, topBoundary, rightBoundary, topBoundary);
@@ -93,6 +98,7 @@ function draw() {
     line(rightWall,topBoundary, rightWall, CANVASHEIGHT);
 
     // Walls
+
     for (i = 0; i < 7; i++) {
         line(leftWall, wallPositions[i], leftBoundary, wallPositions[i])
         line(rightWall, wallPositions[i], rightBoundary, wallPositions[i])
@@ -102,10 +108,12 @@ function draw() {
     rect(ScoreBoard.scorePosition, topBoundary / 5, 160, topBoundary * 0.6) // fix vatiables 
     rect(CANVASWIDTH * 0.05, topBoundary / 5, 60, topBoundary * 0.6)
 
-    fill(NONBLINDINGCOLOUR)
+    fill(BACKGROUNDCOLOUR)
     text(getScore(), ScoreBoard.scorePosition, topBoundary * 0.75);  
     let livesString = 'x' + ScoreBoard.lives;
     text(livesString, CANVASWIDTH * 0.1, topBoundary * 0.75)
+
+    lateUpdate();
 }
 
 function update() {
@@ -114,11 +122,17 @@ function update() {
     updatePlatforms();
     animateWalls();
     addPoints();
+    collectHeart();
 
     if (ScoreBoard.lives < 0) {
         endGame();
     }
-}   
+}  
+
+function lateUpdate() {
+    ball.y = round(ball.y);
+    despawnHeart();
+}
 
 function loadGUI() {
     topBoundary = CANVASHEIGHT * 0.18 ;
@@ -127,7 +141,6 @@ function loadGUI() {
 
     leftWall = leftBoundary / 4;
     rightWall = CANVASWIDTH - leftWall;
-
 }
 
 function collisionCheck() {
@@ -150,7 +163,7 @@ function collisionCheck() {
 }
 
 function updatePlatforms() {
-    loadPlatform(); //rename
+    loadPlatform(); 
 }
 
 function initialiseBall() { // make ball kinematic ditch gravity
@@ -165,6 +178,7 @@ function initialiseBall() { // make ball kinematic ditch gravity
     ball.friction = 0;
     ball.drag = 0;
     ball.shape = 'box';
+    ball.mass = 10
     
     previousY = ball.y
 }
@@ -177,7 +191,7 @@ function initialisePlatforms() { // organise based off json have some sort of lo
     Platforms.type = 'platform'
     Platforms.direction = 270;
     Platforms.speed = speed;
-    //Platforms.scale = 1;
+    //Platforms.scale = 1.375;
     //Platforms.debug = true;
 
     for (i = 0; i < numberOfPlatforms; i++) {
@@ -195,11 +209,10 @@ function initialisePlatforms() { // organise based off json have some sort of lo
     }
 }
 
-function start() {
-    // wait a second or so and then respawn on closest safe platform to the middle
-    // also on first play display ready sign
-    ball.x = CANVASWIDTH / 2;
-    ball.y = CANVASHEIGHT / 2
+function respawn() {
+    let pos = findRespawnPosition();
+    ball.x = pos[0];
+    ball.y = pos[1];
 }
 
 function loadPlatform() {
@@ -208,11 +221,16 @@ function loadPlatform() {
             Platforms[i].y = CANVASHEIGHT;
             Platforms[i].x = getNextObstaclePosition();
             Platforms[i].type = getNextObstacleType();
+            Platforms[i].heart = getHeartStatus();
 
             if (Platforms[i].type == 'spike') {
                 Platforms[i].img = spikeSprite;
             } else {
                 Platforms[i].img = platformSprite;
+            }
+
+            if (Platforms[i].heart == true) {
+                spawnHeart(Platforms[i].x, Platforms[i].y - Platforms[i].h)
             }
             obstacle++
         }
@@ -222,12 +240,20 @@ function loadPlatform() {
 
 function moveBall() {
     if (kb.pressing('left')) {
-        ball.vel.x = -0.5;
+        ball.vel.x = -0.8;
     } else if (kb.pressing('right')) {
-        ball.vel.x = 0.5
+        ball.vel.x = 0.8
     } else {
         ball.vel.x = 0;
     }
+    for (i = 0; i< Platforms.length; i++) {
+        if (ball.colliding(Platforms[i])) {
+            ball.vel.y = 0;
+        } else {
+            ball.vel.y = 1
+        }
+    }
+
 }
 
 function initialiseSpikes() {
@@ -265,13 +291,22 @@ function getNextObstaclePosition() {
     return layout.layout[obstacle].position;
 }
 
+function getHeartStatus() {
+    if (layout.layout[obstacle] == null) {
+        obstacle = 0;
+    }
+    return layout.layout[obstacle].heart;
+}
+
 function killPlayer() {
     // play death anim
     ScoreBoard.lives -= 1;
-    start();
+    ball.visible = false;
+    startRespawnTimer();
 }
 
 function initialiseWalls() { // fix initial spacing
+    wallSpacing = CANVASHEIGHT / 6;
     for (i = 0; i < 7; i++) {
         let x;
         x = (i * wallSpacing);
@@ -289,22 +324,97 @@ function animateWalls() {
 }
 
 function findRespawnPosition() {
-    //find closest non spike platform and return the x,y of the middle of the platform
+    let y = 1000;
+    let x;
+    let result;
+    for (i = 0; i < Platforms.length; i++) {
+        if (Platforms[i].y - (CANVASHEIGHT / 2) < y && Platforms[i].y - (CANVASHEIGHT / 2) >= 0 && Platforms[i].type == 'platform') {
+            y = Platforms[i].y;
+            x = Platforms[i].x;
+        }
+    }
+    result =  [x, y - Platforms[0].height - (ball.height / 2)];
+    return result;
 }
 
 function addPoints() { // fix
     let points;
     points = ball.y - previousY;
 
-    if (points > 0.1) {
+    if (points > 0.7) {
         ScoreBoard.score++;
     }
-
     previousY = ball.y;
 }
 
-function endGame() { // align
+function endGame() {
     ScoreBoard.lives = 0;
-    image(gameOver, 50, 50, CANVASWIDTH * 0.6, CANVASHEIGHT * 0.2) // draw a rect of background colour behind it
+    for (i = 0; i < Platforms.length; i++) {
+        if (Platforms[i].y > CANVASHEIGHT / 3 && Platforms[i].y < (CANVASHEIGHT / 3) + (CANVASHEIGHT * 0.2)) {
+            Platforms[i].remove();
+        }
+    }
+    for (i = 0; i < Heart.length; i++) {
+        if (Heart[i].y > CANVASHEIGHT / 3 && Heart[i].y < (CANVASHEIGHT / 3) + (CANVASHEIGHT * 0.2)) {
+            Heart[i].remove();
+        }
+    }
+    image(gameOver, CANVASWIDTH / 5, CANVASHEIGHT / 3, CANVASWIDTH * 0.6, CANVASHEIGHT * 0.2) // draw a rect of background colour behind it
     noLoop();
 }
+
+function despawnBall() {
+    ball.x = 0;
+    ball.y = 0;
+    ball.collider = 's'
+    ball.sleeping = true;
+    ball.visible = false;
+}
+
+function respawnBall() {
+    ball.collider = 'd'
+    ball.sleeping = false;
+    ball.visible = true;
+    respawn();
+}
+
+async function startRespawnTimer() {
+    despawnBall();
+    await sleep(2000) 
+    respawnBall();
+}
+
+function initialiseHearts() {
+    Heart = new Group();
+    Heart.img = heartSprite;
+    Heart.collider = 'k'
+    Heart.direction = 270;
+    Heart.speed = speed;
+    Heart.scale = 2
+}
+
+function spawnHeart(x, y) {
+    heart = new Heart.Sprite();
+    heart.x = x;
+    heart.y = y - (heart.h / 2);
+}
+
+function collectHeart() {
+    for (i = 0; i < Heart.length; i++) {
+        if (ball.overlapping(Heart[i])) {
+            Heart[i].remove();
+            ScoreBoard.lives++;        
+        }
+    }
+}
+
+function despawnHeart() {
+    for (i = 0; i < Heart.length; i++) {
+        if (Heart[i].y <= topBoundary) {
+            Heart[i].remove();
+        }
+    }
+}
+
+
+
