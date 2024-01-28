@@ -1,0 +1,27 @@
+{
+  "start_pos": [128, 0],
+  "number_of_platforms": 2,
+  "number_of_walls": 1,
+  "objects": 
+  {
+    "platforms": [
+      {
+        "x_pos": 90,
+        "y_pos": 135,
+        "size": 100
+      },
+      {
+        "x_pos": 150,
+        "y_pos": 200,
+        "size": 50
+      }
+    ],
+    "walls": [
+      {
+        "x_pos": 180,
+        "y_pos": 100,
+        "size": 100
+      }
+    ]
+  }
+}
