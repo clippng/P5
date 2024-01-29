@@ -1,15 +1,7 @@
 const CANVASWIDTH = 256;
 const CANVASHEIGHT = 256;
 
-
-let hue = [255, 143, 238]
-
-let colour1 = [20, 20, 20, 255]
-let colour2 = [60, 60, 60, 255]
-let colour3 = [100, 100, 100, 255]
-let colour4 = [140, 140, 140, 255]
-let colour5 = [180, 180, 180, 255]
-
+// do player animations
 let currentScene = 0; //have some sort of key and in draw() do if (scene == 1) {} etc
 
 let n;
@@ -31,6 +23,7 @@ let gameRunning = false;
 
 let levelLoaded = false;
 let menuLoaded = false;
+let selected_menu = 0;
 
 
 let DEBUG = 0;
@@ -46,7 +39,9 @@ let Input = {
     menu: {
         confirm: false,
         left: false,
-        right: false
+        right: false,
+        up: false,
+        down: false
     }
 }
 
@@ -79,9 +74,9 @@ function setup() {
 function draw() {
     background(0)
     frameRate(60);
-    renderStats(0, 0)
-    //getKeyPressed();
-    text(round(frameRate(), 1), 30, 30)
+    //renderStats(0, 0)
+    getKeyPressed();
+    //text(selected_menu, 30, 190)
     if (currentScene == 0) {              //loading screen
         allSprites.visible = false;
         image(smallBackgroundImg, 64, 64)
@@ -105,7 +100,9 @@ function draw() {
         textSize(20)
 
         loadMenu();
-        menu();
+        //menu();
+        menuSelect();
+        highlightMenu();
 
         menuOptions.draw();
         text("Menu", 128, 40);
@@ -126,10 +123,6 @@ function draw() {
         }
         movePlayer();
     }
-    //tint(200)
-
-    //moveCamera();
-    //noTint(); 
 }
 
 function initialisePlayer() {
@@ -268,14 +261,14 @@ function movePlayer() {
         Player.touchingWall = false;
     }
     if (Player.movementLocked == false) {
-        if (Input.grab == true && Player.touchingWall == true && !kb.pressing('up')) {
+        if (Input.movement.grab == true && Player.touchingWall == true && Input.movement.jump == false) {
             grabWall();
         }
         if (Player.touchingWall == false) {
-            if (kb.pressing('left')) {
+            if (Input.movement.left == true) {
                 Player.vel.x = -1;
                 Player.facingDirection = 'left';
-            } else if (kb.pressing('right')) {
+            } else if (Input.movement.right == true) {
                 Player.vel.x = 1;
                 Player.facingDirection = 'right';
             } else {
@@ -283,11 +276,11 @@ function movePlayer() {
             }
         }
 
-        if (kb.presses('up') || kb.presses('space')) {
+        if (Input.movement.jump == true) {
             playerJump();
         }
 
-        if (kb.presses('x')) {
+        if (Input.movement.dash == true) {
             playerDash();
         }
     }
@@ -295,10 +288,10 @@ function movePlayer() {
 
 function playerJump() {
     if (Player.touchingWall == true) {
-        if (player_collider_left.overlapping(Walls) && kb.pressing('z')) {
+        if (player_collider_left.overlapping(Walls) && Input.movement.grab == true) {
             Player.vel.x = 2;
             //Player.vel.y = -(Player.jumpHeight);
-        } else if (player_collider_right.overlapping(Walls) && kb.pressing('z')) {
+        } else if (player_collider_right.overlapping(Walls) && Input.movement.grab == true) {
             Player.vel.x = -2;
             //Player.vel.y = -(Player.jumpHeight);
         }
@@ -344,7 +337,7 @@ async function dashCooldown() {
 
 async function transitionScene(scene, time) {
     currentScene = 0;
-    await sleep(time);
+    await sleep(time)
     currentScene = scene;
 }
 
@@ -352,14 +345,14 @@ function loadMenu() {
     if (menuLoaded == false) {
         for (i = 0; i < 6; i++) {
             let menuOptions_ = new menuOptions.Sprite();
-            if (i < 3) {
+            if (i % 2 == 0) {
                 menuOptions_.x = 64    
             } else {
                 menuOptions_.x = 196
             } 
-            if (i % 3 == 0) {
+            if (i < 2) {
                 menuOptions_.y = 80;
-            } else if (i % 3 == 1) {
+            } else if (i < 4) {
                 menuOptions_.y = 140;
             } else {
                 menuOptions_.y = 200;
@@ -371,27 +364,45 @@ function loadMenu() {
 
 }
 
+function menuSelect() {
+    if (Input.menu.left == true && (selected_menu % 2 == 1)) {
+        selected_menu--;
+    } else if (Input.menu.right == true && (selected_menu % 2 == 0)) {
+        selected_menu++
+    } else if (Input.menu.up == true) {
+        selected_menu -= 2
+    } else if (Input.menu.down == true) {
+        selected_menu += 2
+    } else if (Input.menu.confirm == true) {
+        menuPressed(selected_menu);
+    }
 
-function menu() {
+    if (selected_menu == 6) {
+        selected_menu = 4
+    } else if (selected_menu == 7) {
+        selected_menu = 5
+    } else if ( selected_menu == -1) {
+        selected_menu = 1
+    } else if (selected_menu == -2) {
+        selected_menu = 0;
+    }
+}
+
+function highlightMenu() {
     for (i = 0; i < 6; i++) {
-        if(mouseX >= menuOptions[i].x - (menuOptions[i].w / 2) && mouseX <= menuOptions[i].x + (menuOptions[i].w / 2) &&
-            mouseY >= menuOptions[i].y - (menuOptions[i].h / 2) && mouseY <= menuOptions[i].y + (menuOptions[i].h / 2)) {
-                menuOptions[i].img = highlighted_menuBox_sprite;
-                if (mouseIsPressed === true) {
-                    menuPressed(i)
-            }
+        if (i == selected_menu) {
+            menuOptions[i].img = highlighted_menuBox_sprite;
         } else {
             menuOptions[i].img = menuBox_sprite;
         }
     }
 }
 
-function menuPressed(num) { // 0 is top left, 1 is below etc and then 3 is top right, 4 is below etc
+function menuPressed(num) {
     switch (num) {
         case 0:
             DEBUG = 0;
             newGame();
-            break;
         case 1:
             DEBUG = 1;
             break;
@@ -417,7 +428,7 @@ function newGame() {
 }
 
 function getKeyPressed() {
-    if (kb.pressing('up' || kb.pressing('space'))) {
+    if (kb.presses('up') || kb.presses('space')) {
         Input.movement.jump = true;
     } else {
         Input.movement.jump = false
@@ -425,30 +436,56 @@ function getKeyPressed() {
 
     if (kb.pressing('right')) {
         Input.movement.right = true;
-        Input.menu.right = true;
     } else {
-        Input.movement.right = false;
         Input.movement.right = false;
     }
 
     if (kb.pressing('left')) {
         Input.movement.left = true;
-        Input.menu.left = true;
     } else {
         Input.movement.left = false;
+    }
+
+    if (kb.presses('right')) {
+        Input.menu.right = true;
+    } else {
+        Input.menu.right = false;
+    }
+
+    if (kb.presses('left')) {
+        Input.menu.left = true;
+    } else {
         Input.menu.left = false;
     }
 
-    if (kb.pressing('z') || kb.pressing('shift')) {
+    if (kb.presses('up')) {
+        Input.menu.up = true;
+    } else {
+        Input.menu.up = false;
+    }
+
+    if (kb.presses('down')) {
+        Input.menu.down = true;
+    } else {
+        Input.menu.down = false;
+    }
+
+    if (kb.pressing('x') || kb.pressing('shift')) {
         Input.movement.dash = true;
     } else {
         Input.movement.dash = false;
     }
 
-    if (kb.pressing('x') || kb.pressing('down')) {
+    if (kb.pressing('z') || kb.pressing('down')) {
         Input.movement.grab = true;
     } else {
         Input.movement.grab = false;
+    }
+
+    if (kb.presses('enter') || kb.presses('space')) {
+        Input.menu.confirm = true;
+    } else {
+        Input.menu.confirm = false;
     }
 }
 
