@@ -20,7 +20,7 @@ let Platforms, Walls;
 let currentLevel;
 let object = 0;
 
-let Tile
+let Tiles
 
 let menuOptions, menuBox_sprite, highlighted_menuBox_sprite;
 
@@ -80,6 +80,7 @@ function preload() {
     clouds[3] = loadImage('Sprites/Clouds/cloud_4.png');
     clouds[4] = loadImage('Sprites/Clouds/cloud_5.png');
 
+    current_stage_json = loadJSON('Code/level_2.json')
     level_1_json = loadJSON('Code/level_1.json');
     level_2_json = loadJSON('Code/level_2.json');
 }
@@ -93,6 +94,7 @@ function setup() {
     initialisePlayer();
     initialiseMenu();
     initialiseObstacles();
+    initialiseTiles();
 
     world.gravity.y = 5
 
@@ -105,7 +107,7 @@ function draw() {
     //renderStats(0, 0)
     getKeyPressed();
     sceneHandler();
-    text(currentScene, 50, 50)
+    text(camera.pos, 50, 50)
     if (currentScene == 0) {              //loading screen
         loadingScreen();
     } else if (currentScene == 1) {  // main menu
@@ -158,7 +160,7 @@ function mainMenu() {
 }
 
 function game() {
-    image(mainBackgroundImg,0 , 0)
+    //image(mainBackgroundImg,0 , 0)
     Player.visible = true;
     if (levelLoaded == false ) {
         initialiseLevel();
@@ -244,17 +246,10 @@ function initialisePlayer() {
 }
 
 function initialiseTiles() {
-    Tile = new Group();
-    for (i = 0; i < current_stage_json.tilemap.rows * current_stage_json.tilemap.columns; i++) {
-        let tile_ = getTile(i)
-        switch (tile_) {
-            case '/':
-                break;
-            case 'p':
-                //platform
-                break;
-        }
-    }
+    Tiles = new Group();
+    Tiles.w = 16;
+    Tiles.h = 16;
+    Tiles.collider = 's';
 }
 
 function initialisePlatforms() {
@@ -290,14 +285,32 @@ function initialiseMenu() {
 }
 
 function spawnTiles() {
-// called once at start of stage
+    let n = current_stage_json.rows * current_stage_json.columns
+    for (i = 0; i < n; i++) {
+        let tile_ = getTile(i)
+        switch (tile_) {
+            case '/':
+                break;
+            case 'p':
+                let tile = new Tiles.Sprite();
+                let pos = getTilePosition();
+                tile.x = pos.x
+                tile.y = pos.y
+                tile.visible = true
+                break;
+            case 'w':
+                //wall
+                break;
+        }
+        
+    }
 }
 
 function updateTiles() {
 // called every time a new row is neededz
 }
 
-function spawnPlatforms() {
+/*function spawnPlatforms() {
     for (i = 0; i < current_stage_json.number_of_platforms; i++) {
         let platform_ = new Platforms.Sprite();
         let jsonData = getPlatform(i);
@@ -357,20 +370,27 @@ function getObstacle(index) {
     obstacle_[2] = current_stage_json.objects.obstacles[index].y_pos;
 
     return obstacle_;
-}
+}*/
 
 function moveCamera() {
-    camera.y -= current_stage_json.scroll_speed
+    //camera.y -= current_stage_json.scroll_speed
+    if (Input.movement.left == true) {
+        camera.x -= 1
+    }
+    if (Input.movement.jump == true) {
+        camera.y -= 1
+    }
 }
 
 function initialiseLevel() {
-    spawnPlatforms();
-    spawnWalls();
-    spawnObstacles();
-
-    Walls.visible = true;
-    Platforms.visible = true;
-    RollingRocks.visible = true;
+    //spawnPlatforms();
+    //spawnWalls();
+    //spawnObstacles();
+    spawnTiles();
+    //Walls.visible = true;
+    //Platforms.visible = true;
+    //RollingRocks.visible = true;
+    Tiles.visible = true;
 
     Player.x = current_stage_json.start_pos[0];
     Player.y = current_stage_json.start_pos[1];
@@ -758,19 +778,51 @@ function atmosphere() {
 }
 
 function getTile(x , y) {
-    y = current_stage_json.columns - y;
+    y = abs(y - current_stage_json.columns);
     let tile = current_stage_json.tilemap[y].charAt(x);
 
     return tile;
 }
 
-function getTile(index) {
-    let x = index % current_stage_json.columns;
-    let y = index / current_stage_json.columns;
-    let tile = current_stage_json.tilemap[y].charAt(x);
+function getTile(index) { 
+    let tile, x, y
+    let maxIndex = current_stage_json.rows * current_stage_json.columns
+
+    if (index == 0) {
+        tile = current_stage_json.tilemap[current_stage_json.rows - 1].charAt(0)
+    } else {
+        x = index % current_stage_json.columns;
+        y = floor((abs(index  - maxIndex)) / current_stage_json.columns);
+
+        tile = current_stage_json.tilemap[y].charAt(x);
+    }
+
+
 
     return tile;
 }
+
+function getTilePosition(x, y) {
+    x *= 16 
+    y *= 16
+    x -= 8
+    y -= 8
+    // y has to be reversed though
+
+    return { x : x, y : y }
+}
+
+function getTilePosition(index) { // fix -- both are returning null
+    let x, y;
+    let ceiling = current_stage_json.rows * current_stage_json.columns;
+    x = ((index % current_stage_json.columns) + 1) * 16;
+    y = (floor((abs(index  - ceiling)) / current_stage_json.columns) * 16) - ceiling
+    x = 1
+    y = 1
+
+    return { x: x, y : y }
+}
+
 
 
 
