@@ -1,7 +1,9 @@
 {
-  "start_pos": [128, 0],
-  "number_of_platforms": 2,
-  "number_of_walls": 1,
+  "start_pos": [128, 180],
+  "scroll_speed": 0.1,
+  "number_of_platforms": 3,
+  "number_of_walls": 4,
+  "number_of_obstacles": 1,
   "objects": 
   {
     "platforms": [
@@ -14,13 +16,40 @@
         "x_pos": 150,
         "y_pos": 200,
         "size": 50
+      },
+      {
+        "x_pos": 130,
+        "y_pos": 20,
+        "size": 50
       }
     ],
     "walls": [
       {
-        "x_pos": 180,
+        "x_pos": 20,
         "y_pos": 100,
         "size": 100
+      },
+      {
+        "x_pos": 70,
+        "y_pos": 40,
+        "size": 70
+      },
+      {
+        "x_pos": 120,
+        "y_pos": 0,
+        "size": 20
+      },
+      {
+        "x_pos": 200,
+        "y_pos": -40,
+        "size": 40
+      }
+    ],
+    "obstacles": [
+      {
+        "type": "rolling_rock",
+        "x_pos": 128,
+        "y_pos": 30
       }
     ]
   }
