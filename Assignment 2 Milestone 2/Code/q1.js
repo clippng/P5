@@ -13,9 +13,10 @@ let backGroundActualPos = -712
 let current_stage_json, level_1_json, level_2_json;
 let scene_cache;
 
+let light_spikes, dark_spikes;
 let clouds = []
 
-let Platforms, Walls;
+let grassN, grassE, grassS, grassW, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
 
 let currentLevel;
 let object = 0;
@@ -66,19 +67,37 @@ const Clouds = {
 
 
 function preload() {
-    mainBackgroundImg = loadImage('Sprites/mountain_background_big.png')
-    smallBackgroundImg = loadImage('Sprites/mountain_background.png')
-    player_sprite = loadImage('Sprites/player.png')
-    menuBox_sprite = loadImage('Sprites/menu_box.png')
-    highlighted_menuBox_sprite = loadImage('Sprites/menuBox_H.png')
-    ball_sprite = loadImage('Sprites/ball_obstacle.png')
-    overlay = loadImage('Sprites/overlay.png')
+    mainBackgroundImg = loadImage('Sprites/Other/mountain_background_big.png')
+    smallBackgroundImg = loadImage('Sprites/Other/mountain_background.png')
+    player_sprite = loadImage('Sprites/Player/player.png')
+    menuBox_sprite = loadImage('Sprites/Other/menu_box.png')
+    highlighted_menuBox_sprite = loadImage('Sprites/Other/menuBox_H.png')
+    ball_sprite = loadImage('Sprites/Obstacles/ball_obstacle.png')
+    overlay = loadImage('Sprites/Other/overlay.png')
+    dark_spikes = loadImage('Sprites/Obstacles/dark_spikes.png')
+    light_spikes = loadImage('Sprites/Obstacles/light_spikes.png')
 
     clouds[0] = loadImage('Sprites/Clouds/cloud_1.png');
     clouds[1] = loadImage('Sprites/Clouds/cloud_2.png');
     clouds[2] = loadImage('Sprites/Clouds/cloud_3.png');
     clouds[3] = loadImage('Sprites/Clouds/cloud_4.png');
     clouds[4] = loadImage('Sprites/Clouds/cloud_5.png');
+    
+    grassN = loadImage('Sprites/Terrain/Grass/grass_N.png');
+    grassE = loadImage('Sprites/Terrain/Grass/grass_E.png');
+    grassS = loadImage('Sprites/Terrain/Grass/grass_S.png');
+    grassW = loadImage('Sprites/Terrain/Grass/grass_W.png');
+    grassNE = loadImage('Sprites/Terrain/Grass/grass_NE.png');
+    grassSE = loadImage('Sprites/Terrain/Grass/grass_SE.png');
+    grassSW = loadImage('Sprites/Terrain/Grass/grass_SW.png'); 
+    grassNW = loadImage('Sprites/Terrain/Grass/grass_NW.png');
+    grassM = loadImage('Sprites/Terrain/Grass/grass_M.png');
+    grassNEC = loadImage('Sprites/Terrain/Grass/grass_NEC.png'); 
+    grassSEC = loadImage('Sprites/Terrain/Grass/grass_SEC.png');
+    grassSWC = loadImage('Sprites/Terrain/Grass/grass_SWC.png');
+    grassNWC = loadImage('Sprites/Terrain/Grass/grass_NWC.png');;
+
+
 
     current_stage_json = loadJSON('Code/level_2.json')
     level_1_json = loadJSON('Code/level_1.json');
@@ -107,7 +126,7 @@ function draw() {
     //renderStats(0, 0)
     getKeyPressed();
     sceneHandler();
-    text(camera.pos, 50, 50)
+    //text(getTile(140), 50, 50)
     if (currentScene == 0) {              //loading screen
         loadingScreen();
     } else if (currentScene == 1) {  // main menu
@@ -160,7 +179,7 @@ function mainMenu() {
 }
 
 function game() {
-    //image(mainBackgroundImg,0 , 0)
+    image(mainBackgroundImg,0 , 0)
     Player.visible = true;
     if (levelLoaded == false ) {
         initialiseLevel();
@@ -195,7 +214,7 @@ function initialisePlayer() {
     Player.removeColliders()
     Player.addCollider(1, 8, 12, 17)
 
-    Player.spriteSheet = 'Sprites/player_sprite_sheet.png'
+    Player.spriteSheet = 'Sprites/Player/player_sprite_sheet.png'
     Player.anis.frameDelay = 10
 
     Player.addAnis({
@@ -260,10 +279,10 @@ function initialisePlatforms() {
 }
 
 function initialiseWalls() {
-    Walls = new Group();
-    Walls.colour = 0;
-    Walls.collider = 's';
-    Walls.w = 10;
+    Tiles = new Group();
+    Tiles.colour = 0;
+    Tiles.collider = 's';
+    Tiles.w = 10;
 }
 
 function initialiseObstacles() {
@@ -288,14 +307,15 @@ function spawnTiles() {
     let n = current_stage_json.rows * current_stage_json.columns
     for (i = 0; i < n; i++) {
         let tile_ = getTile(i)
+        console.log(tile_)
         switch (tile_) {
             case '/':
                 break;
             case 'p':
                 let tile = new Tiles.Sprite();
-                let pos = getTilePosition();
-                tile.x = pos.x
-                tile.y = pos.y
+                let pos = getTilePosition(i);
+                tile.x = pos.y
+                tile.y = pos.x
                 tile.visible = true
                 break;
             case 'w':
@@ -310,29 +330,6 @@ function updateTiles() {
 // called every time a new row is neededz
 }
 
-/*function spawnPlatforms() {
-    for (i = 0; i < current_stage_json.number_of_platforms; i++) {
-        let platform_ = new Platforms.Sprite();
-        let jsonData = getPlatform(i);
-        platform_.visible = true;
-        platform_.x = jsonData[0];
-        platform_.y = jsonData[1];
-        platform_.w = jsonData[2];
-        platform_.colour = i * 25;
-    }
-}
-
-function spawnWalls() {
-    for (i = 0; i < current_stage_json.number_of_walls; i++) {
-        let wall_ = new Walls.Sprite();
-        let jsonData = getWall(i);
-        wall_.visible = true;
-        wall_.x = jsonData[0];
-        wall_.y = jsonData[1];
-        wall_.h = jsonData[2];
-        wall_.colour = i * 25;
-    }
-}
 
 function spawnObstacles() {
     for (i = 0; i < current_stage_json.number_of_obstacles; i++) {
@@ -347,22 +344,6 @@ function spawnObstacles() {
     }
 }
 
-function getPlatform(index) { // returns [x, y, w]
-    let platform_ = [];
-    platform_[0] = current_stage_json.objects.platforms[index].x_pos;
-    platform_[1] = current_stage_json.objects.platforms[index].y_pos;
-    platform_[2] = current_stage_json.objects.platforms[index].size;
-    return platform_;
-}
-
-function getWall(index) { 
-    let wall_ = [];
-    wall_[0] = current_stage_json.objects.walls[index].x_pos;
-    wall_[1] = current_stage_json.objects.walls[index].y_pos;
-    wall_[2] = current_stage_json.objects.walls[index].size;
-    return wall_;
-}
-
 function getObstacle(index) {
     let obstacle_ = [];
     obstacle_[0] = current_stage_json.objects.obstacles[index].type;
@@ -370,16 +351,10 @@ function getObstacle(index) {
     obstacle_[2] = current_stage_json.objects.obstacles[index].y_pos;
 
     return obstacle_;
-}*/
+}
 
 function moveCamera() {
-    //camera.y -= current_stage_json.scroll_speed
-    if (Input.movement.left == true) {
-        camera.x -= 1
-    }
-    if (Input.movement.jump == true) {
-        camera.y -= 1
-    }
+    //camera.y = round(Player.y)
 }
 
 function initialiseLevel() {
@@ -392,19 +367,19 @@ function initialiseLevel() {
     //RollingRocks.visible = true;
     Tiles.visible = true;
 
-    Player.x = current_stage_json.start_pos[0];
-    Player.y = current_stage_json.start_pos[1];
+    Player.x = 30//current_stage_json.start_pos[0];
+    Player.y = 200//current_stage_json.start_pos[1];
 }
 
 function movePlayer() {
-    if (player_collider_left.overlapping(Walls) || player_collider_right.overlapping(Walls) ||
-    player_collider_left.overlapping(Platforms) || player_collider_right.overlapping(Platforms)) {
+    if (player_collider_left.overlapping(Tiles) || player_collider_right.overlapping(Tiles)) {
         Player.touchingWall = true;
     } else {
         Player.touchingWall = false;
     }
-    if (player_collider_bottom.overlapping(Walls) || player_collider_bottom.overlapping(Platforms)) {
+    if (player_collider_bottom.overlapping(Tiles)) {
         Player.jumping = false;
+        setJumps(1)
     }
     if (Player.movementLocked == false) {
         if (Input.movement.grab == true && Player.touchingWall == true && Input.movement.jump == false) {
@@ -413,11 +388,10 @@ function movePlayer() {
             releaseWall();
         }
         if (Player.holdingWall == false) {
-            if (Input.movement.left == true && !(player_collider_left.overlapping(Walls) || 
-            player_collider_left.overlapping(Platforms))) {
+            if (Input.movement.left == true && !(player_collider_left.overlapping(Tiles))) {
                 Player.vel.x = -1;
                 Player.facingDirection = 'left';
-            } else if (Input.movement.right == true && !(player_collider_right.overlapping(Walls) || 
+            } else if (Input.movement.right == true && !(player_collider_right.overlapping(Tiles) || 
             player_collider_right.overlapping(Platforms))) {
                 Player.vel.x = 1;
                 Player.facingDirection = 'right';
@@ -440,14 +414,14 @@ function movePlayer() {
 
 function playerJump() {
     if (Player.touchingWall == true) {
-        if (player_collider_left.overlapping(Walls) && Player.holdingWall == true) {
+        if (player_collider_left.overlapping(Tiles) && Player.holdingWall == true) {
             Player.vel.x = 10;
-        } else if (player_collider_right.overlapping(Walls) && Player.holdingWall == true) {
+        } else if (player_collider_right.overlapping(Tiles) && Player.holdingWall == true) {
             Player.vel.x = -10;
         }
         Player.vel.y = -(Player.jumpHeight);
         Player.jumps++;
-    } else if (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Walls)) {
+    } else if (player_collider_bottom.overlapping(Tiles)) {
         setJumps(1);
         Player.vel.y = -(Player.jumpHeight);
     } else if (Player.jumps < Player.maxJumps) {
@@ -506,11 +480,11 @@ function animatePlayer() {
         Player.changeAni('idle')
     }
 
-    if (Input.movement.left == true && (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Walls))) {
+    if (Input.movement.left == true && (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Tiles))) {
         Player.changeAni('run');
-    } else if (Input.movement.right == true && (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Walls))) {
+    } else if (Input.movement.right == true && (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Tiles))) {
         Player.changeAni('run')
-    } else if (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Walls)) {
+    } else if (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Tiles)) {
         Player.changeAni('idle')
     }
 
@@ -777,50 +751,32 @@ function atmosphere() {
     noTint()
 }
 
-function getTile(x , y) {
-    y = abs(y - current_stage_json.columns);
-    let tile = current_stage_json.tilemap[y].charAt(x);
-
-    return tile;
-}
-
 function getTile(index) { 
-    let tile, x, y
-    let maxIndex = current_stage_json.rows * current_stage_json.columns
-
-    if (index == 0) {
-        tile = current_stage_json.tilemap[current_stage_json.rows - 1].charAt(0)
-    } else {
-        x = index % current_stage_json.columns;
-        y = floor((abs(index  - maxIndex)) / current_stage_json.columns);
-
-        tile = current_stage_json.tilemap[y].charAt(x);
-    }
-
-
+    let pos = getGridPosition(index);
+    rowPos = pos.y
+    colPos = pos.x
+    tile = current_stage_json.tilemap[rowPos].charAt(colPos)
 
     return tile;
-}
-
-function getTilePosition(x, y) {
-    x *= 16 
-    y *= 16
-    x -= 8
-    y -= 8
-    // y has to be reversed though
-
-    return { x : x, y : y }
 }
 
 function getTilePosition(index) { // fix -- both are returning null
-    let x, y;
-    let ceiling = current_stage_json.rows * current_stage_json.columns;
-    x = ((index % current_stage_json.columns) + 1) * 16;
-    y = (floor((abs(index  - ceiling)) / current_stage_json.columns) * 16) - ceiling
-    x = 1
-    y = 1
+    let pos = getGridPosition(index)
+    //console.log(pos)
+    rowPos = pos.y * 16
+    colPos = pos.x * 16
 
-    return { x: x, y : y }
+    return { x: rowPos, y : colPos }
+}
+
+function getGridPosition(index) {
+    let colPos, rowPos;
+    let rowLength = current_stage_json.columns
+
+    rowPos = floor(index / rowLength)
+    colPos = index % rowLength
+    //console.log(rowPos)
+    return { x: colPos, y: rowPos}
 }
 
 
