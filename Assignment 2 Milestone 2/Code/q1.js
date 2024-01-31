@@ -3,6 +3,7 @@ const CANVASHEIGHT = 256;
 
 // do player animations
 // make each object have a cooldown for grab / wall kick
+// make in game overlay and pause menu
 let currentScene = 0; 
 
 let n;
@@ -12,18 +13,19 @@ let mainBackgroundImg, smallBackgroundImg;
 let backGroundActualPos = -712
 let current_stage_json, level_1_json, level_2_json;
 let scene_cache;
+let flag_anim;
 
 let light_spikes, dark_spikes;
 let clouds = []
 
-let grassN, grassE, grassS, grassW, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
+let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
 
 let currentLevel;
 let object = 0;
 
-let Tiles
+let Tiles, CheckPoints
 
-let menuOptions, menuBox_sprite, highlighted_menuBox_sprite;
+let menuOptions, menu_box_sprite, highlighted_menu_box_sprite, big_menu_box_sprite, highlighted_big_menu_box_sprite;
 
 let ball_sprite;
 
@@ -31,14 +33,9 @@ let overlay
 let gameRunning = false;
 
 let levelLoaded = false;
-let menuLoaded = false;
-let selected_menu = 0;
-
 
 let grab_platform;
 
-
-let DEBUG = 0;
 
 const Input = {
     movement: {
@@ -46,14 +43,16 @@ const Input = {
         dash: false,
         grab: false,
         left: false,
-        right: false
+        right: false,
+        pause: false
     },
     menu: {
         confirm: false,
         left: false,
         right: false,
         up: false,
-        down: false
+        down: false,
+        back: false
     }
 };
 
@@ -65,28 +64,38 @@ const Clouds = {
     speed: 0.05
 };
 
+const Menu = {
+    options: 0,
+    loaded: false,
+    selected_menu: 0,
+    box_size: 0
+};
+
 
 function preload() {
-    mainBackgroundImg = loadImage('Sprites/Other/mountain_background_big.png')
-    smallBackgroundImg = loadImage('Sprites/Other/mountain_background.png')
-    player_sprite = loadImage('Sprites/Player/player.png')
-    menuBox_sprite = loadImage('Sprites/Other/menu_box.png')
-    highlighted_menuBox_sprite = loadImage('Sprites/Other/menuBox_H.png')
-    ball_sprite = loadImage('Sprites/Obstacles/ball_obstacle.png')
-    overlay = loadImage('Sprites/Other/overlay.png')
-    dark_spikes = loadImage('Sprites/Obstacles/dark_spikes.png')
-    light_spikes = loadImage('Sprites/Obstacles/light_spikes.png')
+    mainBackgroundImg = loadImage('Sprites/Other/mountain_background_big.png');
+    smallBackgroundImg = loadImage('Sprites/Other/mountain_background.png');
+    player_sprite = loadImage('Sprites/Player/player.png');
+    menu_box_sprite = loadImage('Sprites/Other/menu_box.png');
+    highlighted_menu_box_sprite = loadImage('Sprites/Other/menuBox_H.png');
+    ball_sprite = loadImage('Sprites/Obstacles/ball_obstacle.png');
+    overlay = loadImage('Sprites/Other/overlay.png');
+    dark_spikes = loadImage('Sprites/Obstacles/dark_spikes.png');
+    light_spikes = loadImage('Sprites/Obstacles/light_spikes.png');
+    big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box.png');
+    highlighted_big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box_H.png');
 
     clouds[0] = loadImage('Sprites/Clouds/cloud_1.png');
     clouds[1] = loadImage('Sprites/Clouds/cloud_2.png');
     clouds[2] = loadImage('Sprites/Clouds/cloud_3.png');
     clouds[3] = loadImage('Sprites/Clouds/cloud_4.png');
     clouds[4] = loadImage('Sprites/Clouds/cloud_5.png');
-    
+
     grassN = loadImage('Sprites/Terrain/Grass/grass_N.png');
     grassE = loadImage('Sprites/Terrain/Grass/grass_E.png');
     grassS = loadImage('Sprites/Terrain/Grass/grass_S.png');
     grassW = loadImage('Sprites/Terrain/Grass/grass_W.png');
+    grassC = loadImage('Sprites/Terrain/Grass/grass_C.png')
     grassNE = loadImage('Sprites/Terrain/Grass/grass_NE.png');
     grassSE = loadImage('Sprites/Terrain/Grass/grass_SE.png');
     grassSW = loadImage('Sprites/Terrain/Grass/grass_SW.png'); 
@@ -97,9 +106,6 @@ function preload() {
     grassSWC = loadImage('Sprites/Terrain/Grass/grass_SWC.png');
     grassNWC = loadImage('Sprites/Terrain/Grass/grass_NWC.png');;
 
-
-
-    current_stage_json = loadJSON('Code/level_2.json')
     level_1_json = loadJSON('Code/level_1.json');
     level_2_json = loadJSON('Code/level_2.json');
 }
@@ -108,12 +114,11 @@ function setup() {
     new Canvas(CANVASWIDTH, CANVASHEIGHT, 'pixelated')
 
     allSprites.pixelPerfect = true;
-    initialisePlatforms();
-    initialiseWalls()
     initialisePlayer();
     initialiseMenu();
     initialiseObstacles();
     initialiseTiles();
+    initialiseCheckPoints();
 
     world.gravity.y = 5
 
@@ -126,21 +131,20 @@ function draw() {
     //renderStats(0, 0)
     getKeyPressed();
     sceneHandler();
-    //text(getTile(140), 50, 50)
-    if (currentScene == 0) {              //loading screen
+    if (currentScene == 0) {                // loading screen
         loadingScreen();
-    } else if (currentScene == 1) {  // main menu
+    } else if (currentScene == 1) {        // main menu
         mainMenu();
     } else if (currentScene == 2) {        // select save
-        loadMenu(1);
+        saveSelect()
     } else if (currentScene == 3) {        // game
         game();
-    } else if (currentScene == 4) { // high scores
+    } else if (currentScene == 4) {        // high scores
 
-    } else if (currentScene == 5) { // how to play
+    } else if (currentScene == 5) {        // how to play
 
-    } else if (currentScene == 6) { // settings
-
+    } else if (currentScene == 6) {        // settings
+        settings();
     }
     if (currentScene != 0) {
         //allSprites.draw();
@@ -169,34 +173,35 @@ function loadingScreen() {
 function mainMenu() {
     allSprites.visible = false;
     textAlign(CENTER); 
-    textSize(20)
 
     loadMenu(0);
-    menuSelect();
+    menuSelect(0);
     highlightMenu();
 
     text("Menu", 128, 40);
 }
 
 function game() {
+    tint(200)
     image(mainBackgroundImg,0 , 0)
     Player.visible = true;
     if (levelLoaded == false ) {
         initialiseLevel();
+        spawnPlayer(current_stage_json.start_pos[0], current_stage_json.start_pos[1]);
+        spawnCheckPoints();
         levelLoaded = true;
     }
 
-
+    collisionDetection();
+    updateTiles();
     atmosphere();
     movePlayer();
-    moveCamera();
 }
 
 function initialisePlayer() {
     Player = new Sprite();
-    Player.w = 64;
-    Player.h = 64;
     Player.img = player_sprite;
+    Player.collider = 'k';
     Player.rotationLock = true;
     Player.mass = 1000;
     Player.bounciness = 0.001
@@ -212,7 +217,7 @@ function initialisePlayer() {
     Player.jumping = false;
     
     Player.removeColliders()
-    Player.addCollider(1, 8, 12, 17)
+    Player.addCollider(1, 7, 12, 17)
 
     Player.spriteSheet = 'Sprites/Player/player_sprite_sheet.png'
     Player.anis.frameDelay = 10
@@ -264,25 +269,33 @@ function initialisePlayer() {
     joint_right.visible = false;
 }
 
+function saveSelect() {
+    loadMenu(1);
+    getKeyPressed();
+    menuSelect(1);
+    highlightMenu();
+    if (Input.menu.back == true) {
+        transitionScene(1, 200)
+    }
+    text("Select Save", 128, 40)
+}
+
+function settings() {
+    loadMenu(2)
+    getKeyPressed();
+    menuSelect(2);
+    highlightMenu();
+    if (Input.menu.back == true) {
+        transitionScene(1, 200)
+    }
+    text("Settings", 128, 40)
+}
+
 function initialiseTiles() {
     Tiles = new Group();
     Tiles.w = 16;
     Tiles.h = 16;
     Tiles.collider = 's';
-}
-
-function initialisePlatforms() {
-    Platforms = new Group();
-    Platforms.colour = 0;
-    Platforms.collider = 's';
-    Platforms.h = 10
-}
-
-function initialiseWalls() {
-    Tiles = new Group();
-    Tiles.colour = 0;
-    Tiles.collider = 's';
-    Tiles.w = 10;
 }
 
 function initialiseObstacles() {
@@ -298,36 +311,95 @@ function initialiseObstacles() {
 function initialiseMenu() {
     menuOptions = new Group();
     menuOptions.collider = 'n';
-    menuOptions.img = menuBox_sprite;
+    menuOptions.img = menu_box_sprite;
     menuOptions.visible = false;
     menuOptions.scale = 2;
 }
 
+function initialiseCheckPoints() {
+    CheckPoints = new Group();
+    CheckPoints.collider = 'n';
+    CheckPoints.activated = false;
+    CheckPoints.spriteSheet = 'Sprites/Other/flag_sprite_sheet.png';
+    CheckPoints.frameDelay = 10;
+    CheckPoints.addAnis({
+        active: { width: 16, height: 32, x: 0, y: 0, frames: 7 },
+        idle: { width: 16, height: 32, x: 112, y: 0, frames: 1 }
+    });
+}
+
+function spawnPlayer(x, y) {
+    Player.x = x;
+    Player.y = y;
+    Player.visible = true;
+    Player.collider = 'd';
+}
+
+function despawnPlayer() {
+    Player.x = 128;
+    Player.y = 128;
+    Player.visible = false;
+    Player.collider = 's';
+}
+
 function spawnTiles() {
-    let n = current_stage_json.rows * current_stage_json.columns
+    let n = current_stage_json.tilemap[0].length * current_stage_json.tilemap.length
     for (i = 0; i < n; i++) {
         let tile_ = getTile(i)
-        console.log(tile_)
-        switch (tile_) {
-            case '/':
-                break;
-            case 'p':
-                let tile = new Tiles.Sprite();
-                let pos = getTilePosition(i);
-                tile.x = pos.y
-                tile.y = pos.x
-                tile.visible = true
-                break;
-            case 'w':
-                //wall
-                break;
+        if (tile_ != '/') {
+            let tile = new Tiles.Sprite()                    
+            let pos = getTilePosition(i);
+            tile.x = pos.y
+            tile.y = pos.x - 312 // make this part of the getTilePosition() function
+            switch (tile_) {
+                case 'p':
+                    tile.colour = 0;
+                    break;
+                case 'N':
+                    tile.img = grassN;
+                    break;
+                case 'E':
+                    tile.img = grassE;
+                    break;
+                case 'S':
+                    tile.img = grassS;
+                    break;
+                case 'W':
+                    tile.img = grassW;
+                    break;
+                case 'C':
+                    tile.img = grassC;
+                    break;
+                case 'n':
+                    tile.img = grassNE;
+                    break;
+                case 'e':
+                    tile.img = grassSE;
+                    break;
+                case 's':
+                    tile.img = grassSW;
+                    break;
+                case 'w':
+                    tile.img = grassNW;
+            }
         }
-        
     }
 }
 
 function updateTiles() {
-// called every time a new row is neededz
+
+}
+
+function spawnCheckPoints() {
+    for (i = 0; i < current_stage_json.objects.flags.length; i++) {
+        let checkpoint_ = new CheckPoints.Sprite();
+        checkpoint_.changeAni('idle');
+        checkpoint_.x = current_stage_json.objects.flags[i].x;
+        checkpoint_.y = current_stage_json.objects.flags[i].y;
+        checkpoint_.collider = 'n';
+        checkpoint_.visible = true;
+    }
+
 }
 
 
@@ -353,22 +425,15 @@ function getObstacle(index) {
     return obstacle_;
 }
 
-function moveCamera() {
-    //camera.y = round(Player.y)
+function moveCamera(position) {
+    camera.moveTo(128, position, 100);
 }
 
 function initialiseLevel() {
-    //spawnPlatforms();
-    //spawnWalls();
     //spawnObstacles();
     spawnTiles();
-    //Walls.visible = true;
-    //Platforms.visible = true;
     //RollingRocks.visible = true;
     Tiles.visible = true;
-
-    Player.x = 30//current_stage_json.start_pos[0];
-    Player.y = 200//current_stage_json.start_pos[1];
 }
 
 function movePlayer() {
@@ -392,7 +457,7 @@ function movePlayer() {
                 Player.vel.x = -1;
                 Player.facingDirection = 'left';
             } else if (Input.movement.right == true && !(player_collider_right.overlapping(Tiles) || 
-            player_collider_right.overlapping(Platforms))) {
+            player_collider_right.overlapping(Tiles))) {
                 Player.vel.x = 1;
                 Player.facingDirection = 'right';
             } else {
@@ -480,11 +545,11 @@ function animatePlayer() {
         Player.changeAni('idle')
     }
 
-    if (Input.movement.left == true && (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Tiles))) {
+    if (Input.movement.left == true && (player_collider_bottom.overlapping(Tiles) || player_collider_bottom.overlapping(Tiles))) {
         Player.changeAni('run');
-    } else if (Input.movement.right == true && (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Tiles))) {
+    } else if (Input.movement.right == true && (player_collider_bottom.overlapping(Tiles) || player_collider_bottom.overlapping(Tiles))) {
         Player.changeAni('run')
-    } else if (player_collider_bottom.overlapping(Platforms) || player_collider_bottom.overlapping(Tiles)) {
+    } else if (player_collider_bottom.overlapping(Tiles) || player_collider_bottom.overlapping(Tiles)) {
         Player.changeAni('idle')
     }
 
@@ -502,9 +567,12 @@ async function transitionScene(scene, time) {
 }
 
 function loadMenu(menu) {
-    if (menuLoaded == false) {
+    if (Menu.loaded == false) {
+        Menu.selected_menu = 0;
         if (menu == 0) {
-            for (i = 0; i < 6; i++) {
+            Menu.options = 6;
+            Menu.box_size = 0;
+            for (i = 0; i < Menu.options; i++) {
                 let menuOptions_ = new menuOptions.Sprite();
                 if (i % 2 == 0) {
                     menuOptions_.x = 74    
@@ -528,84 +596,113 @@ function loadMenu(menu) {
             menuOptions[3].text = "Leaderboard"
             menuOptions[4].text = "Tutorial"
             menuOptions[5].text = "Settings"
-            menuLoaded = true;
+            Menu.loaded = true;
         } else if (menu == 1) {
-            for (i = 0; i < 3; i++) { // make bigger sprites (108px wide)
+            Menu.options = 3;
+            Menu.box_size = 1;
+            for (i = 0; i < Menu.options; i++) { // make bigger sprites (108px wide)
                 let menuOptions_ = new menuOptions.Sprite();
-                menuOptions_.x = 74
-                if (i == 0) {
-                    menuOptions_.y = 80;
-                } else if (i == 1) {
-                    menuOptions_.y = 125;
-                } else {
-                    menuOptions_.y = 170;
-                }
+                menuOptions_.x = 128
+                menuOptions_.y = 80 + (i * 45)
             }
-            menuLoaded = true;
+            Menu.loaded = true;
+        } else if (menu == 2) { // settings
+            Menu.options = 4;
+            Menu.box_size = 1;
+            for (i = 0; i < Menu.options; i++) { // also want bigger sprites here
+                let menuOptions_ = new menuOptions.Sprite();
+                menuOptions_.x = 128;
+                menuOptions_.y = 80 + (i * 45)
+            }
+            Menu.loaded = true;
         }
     }
     menuOptions.visible = true;
 }
 
-function menuSelect() {
-    if (Input.menu.left == true && (selected_menu % 2 == 1)) {
-        selected_menu--;
-    } else if (Input.menu.right == true && (selected_menu % 2 == 0)) {
-        selected_menu++
-    } else if (Input.menu.up == true) {
-        selected_menu -= 2
-    } else if (Input.menu.down == true) {
-        selected_menu += 2
-    }
+function menuSelect(menu) {
+    switch (menu) {
+        case 0:
+            if (Input.menu.left == true && (Menu.selected_menu % 2 == 1)) {
+                Menu.selected_menu--;
+            } else if (Input.menu.right == true && (Menu.selected_menu % 2 == 0)) {
+                Menu.selected_menu++
+            } else if (Input.menu.up == true) {
+                Menu.selected_menu -= 2
+            } else if (Input.menu.down == true) {
+                Menu.selected_menu += 2
+            }
 
-    if (selected_menu == 6) {
-        selected_menu = 4
-    } else if (selected_menu == 7) {
-        selected_menu = 5
-    } else if ( selected_menu == -1) {
-        selected_menu = 1
-    } else if (selected_menu == -2) {
-        selected_menu = 0;
-    }
+            if (Menu.selected_menu == 6) {
+                Menu.selected_menu = 4
+            } else if (Menu.selected_menu == 7) {
+                Menu.selected_menu = 5
+            } else if ( Menu.selected_menu == -1) {
+                Menu.selected_menu = 1
+            } else if (Menu.selected_menu == -2) {
+                Menu.selected_menu = 0;
+            }
 
-    if (Input.menu.confirm == true) {
-        menuPressed(selected_menu);
+            if (Input.menu.confirm == true) {
+                menuPressed(Menu.selected_menu);
+            }
+            break;
+        case 1:
+            if (Input.menu.down == true && Menu.selected_menu != Menu.options - 1) {
+                Menu.selected_menu++;
+            } else if (Input.menu.up == true && Menu.selected_menu != 0) {
+                Menu.selected_menu--;
+            }
+            break;
+        case 2:
+            if (Input.menu.down == true && Menu.selected_menu != Menu.options - 1) {
+                Menu.selected_menu++;
+            } else if (Input.menu.up == true && Menu.selected_menu != 0) {
+                Menu.selected_menu--;
+            }
+            break;
     }
 }
 
 function highlightMenu() {
-    for (i = 0; i < 6; i++) {
-        if (i == selected_menu) {
-            menuOptions[i].img = highlighted_menuBox_sprite;
-            menuOptions[i].textColor = '#f6d6db';
-        } else {
-            menuOptions[i].img = menuBox_sprite;
-            menuOptions[i].textColor = '#816271';
+    for (i = 0; i < Menu.options; i++) {
+        if (Menu.box_size == 0) {
+            if (i == Menu.selected_menu) {
+                menuOptions[i].img = highlighted_menu_box_sprite;
+                menuOptions[i].textColor = '#f6d6db';
+            } else {
+                menuOptions[i].img = menu_box_sprite;
+                menuOptions[i].textColor = '#816271';
+            }            
+        } else if (Menu.box_size == 1) {
+            if (i == Menu.selected_menu) {
+                menuOptions[i].img = highlighted_big_menu_box_sprite;
+                menuOptions[i].textColor = '#f6d6db';
+            } else {
+                menuOptions[i].img = big_menu_box_sprite;
+                menuOptions[i].textColor = '#816271';
+            }      
         }
+
     }
 }
 
 function menuPressed(num) {
     switch (num) {
         case 0:
-            DEBUG = 0;
             newGame();
             break;
         case 1:
-            DEBUG = 1;
             transitionScene(2, 200)
             break;
         case 2:
-            DEBUG = 2;
             break;
         case 3:
-            DEBUG = 3;
             break;
         case 4:
-            DEBUG = 4;
             break;
         case 5:
-            DEBUG = 5;
+            transitionScene(6, 200)
             break;
     }
 
@@ -613,7 +710,7 @@ function menuPressed(num) {
 
 function newGame() {
     transitionScene(3, 2000);
-    loadLevelOne();
+    loadLevel(1);
     gameRunning = true;
     currentLevel = 1;
     initialiseAtmosphere();
@@ -679,6 +776,14 @@ function getKeyPressed() {
     } else {
         Input.menu.confirm = false;
     }
+
+    if (kb.presses('escape') || kb.presses('b')) {
+        Input.menu.back = true;
+        Input.movement.pause = true;
+    } else {
+        Input.menu.back = false;
+        Input.movement.pause = false;
+    }
 }
 
 function sceneHandler() {
@@ -688,7 +793,6 @@ function sceneHandler() {
     }    
     sceneDeconstructor(scene_cache);
     scene_cache = currentScene;
-
 }
 
 function sceneDeconstructor(scene) {
@@ -697,20 +801,34 @@ function sceneDeconstructor(scene) {
             break;
         case 1:
             menuOptions.removeAll();
-            menuLoaded = false;
+            Menu.loaded = false;
             break;
         case 2:
             menuOptions.removeAll();
-            menuLoaded = false;
+            Menu.loaded = false;
             break;
         case 3:
-            Player.visible = false;
+            despawnPlayer();
             break;
+        case 4:
+            break;
+        case 5:
+            break;
+        case 6:
+            menuOptions.removeAll();
+            Menu.loaded = false;
+            break;
+
     }
 }
 
-function loadLevelOne() {
-    current_stage_json = level_1_json;
+function loadLevel(level) {
+    switch(level) {
+        case 1:
+            current_stage_json = level_1_json;
+            break;
+    }
+
 }
 
 function triggerRollingRock(index) {
@@ -760,7 +878,7 @@ function getTile(index) {
     return tile;
 }
 
-function getTilePosition(index) { // fix -- both are returning null
+function getTilePosition(index) { 
     let pos = getGridPosition(index)
     //console.log(pos)
     rowPos = pos.y * 16
@@ -771,13 +889,34 @@ function getTilePosition(index) { // fix -- both are returning null
 
 function getGridPosition(index) {
     let colPos, rowPos;
-    let rowLength = current_stage_json.columns
+    let rowLength = current_stage_json.tilemap[0].length;
 
     rowPos = floor(index / rowLength)
     colPos = index % rowLength
     //console.log(rowPos)
     return { x: colPos, y: rowPos}
 }
+
+function activateCheckpoint(index) {
+    CheckPoints[index].activated = true;
+    CheckPoints[index].changeAni('active');
+    // set respawn
+    camera.moveTo(128, current_stage_json.objects.flags[index].camera, 1) // get from json (whatever value is best for that checkpoint)
+}
+
+function collisionDetection() {
+    for (i = 0; i < current_stage_json.objects.flags.length; i++) {
+        if (Player.overlaps(CheckPoints[i])) {
+            if (CheckPoints[i].activated == false) {
+                activateCheckpoint(i);
+            }
+        }
+    }
+
+}
+
+//colums = tilemap[0]/length()
+//rows = tilemap.length()
 
 
 
