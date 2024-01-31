@@ -1,21 +1,22 @@
 const CANVASWIDTH = 256;
 const CANVASHEIGHT = 256;
 
-// do player animations
 // make each object have a cooldown for grab / wall kick
 // make in game overlay and pause menu
 // fix clouds spawning on screen
+// Idea to count save stats so like count jumps / deaths etc -- would satisfy the leaderboard requirement i think ?
+// try to find a way to make the text clearer (stroke ?)
+// fix text boxes or find a way to render text above sprites
 let currentScene = 0; 
 
 let n;
 let Player, player_collider_bottom, player_collider_left, player_collider_right;
 let player_sprite, player_run_anim, player_grab_anim, player_wall_jump_anim;
 let mainBackgroundImg, smallBackgroundImg;
-let backGroundActualPos = -712
 let current_stage_json, level_1_json, level_2_json;
 let scene_cache;
 let flag_anim;
-
+let slider_idicator, slider_bar
 let light_spikes, dark_spikes, light_spikes_bottom, dark_spikes_bottom;
 let clouds = []
 
@@ -27,7 +28,8 @@ let object = 0;
 let Tiles, CheckPoints, Spikes
 
 let menuOptions, menu_box_sprite, highlighted_menu_box_sprite, big_menu_box_sprite, highlighted_big_menu_box_sprite;
-
+let Slider
+let TextBox
 let ball_sprite;
 
 let overlay
@@ -75,7 +77,6 @@ const Menu = {
     box_size: 0
 };
 
-
 function preload() {
     mainBackgroundImg = loadImage('Sprites/Other/mountain_background_big.png');
     smallBackgroundImg = loadImage('Sprites/Other/mountain_background.png');
@@ -89,6 +90,8 @@ function preload() {
     light_spikes = loadImage('Sprites/Obstacles/light_spikes.png');
     big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box.png');
     highlighted_big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box_H.png');
+    slider_bar = loadImage('Sprites/Other/slider_bar.png');
+    slider_idicator = loadImage('Sprites/Other/slider_indicator.png');
 
     clouds[0] = loadImage('Sprites/Clouds/cloud_1.png');
     clouds[1] = loadImage('Sprites/Clouds/cloud_2.png');
@@ -109,7 +112,7 @@ function preload() {
     grassNEC = loadImage('Sprites/Terrain/Grass/grass_NEC.png'); 
     grassSEC = loadImage('Sprites/Terrain/Grass/grass_SEC.png');
     grassSWC = loadImage('Sprites/Terrain/Grass/grass_SWC.png');
-    grassNWC = loadImage('Sprites/Terrain/Grass/grass_NWC.png');;
+    grassNWC = loadImage('Sprites/Terrain/Grass/grass_NWC.png');
 
     level_1_json = loadJSON('Code/level_1.json');
     level_2_json = loadJSON('Code/level_2.json');
@@ -156,7 +159,7 @@ function draw() {
         camera.on();
         allSprites.draw();
         camera.off()
-        //image(overlay, 0, 0, 256, 256)
+        image(overlay, 0, 0, 256, 256)
     }
 }
 
@@ -202,6 +205,7 @@ function game() {
         levelLoaded = true;
     }
 
+    boundaryCheck();
     collisionDetection();
     updateTiles();
     atmosphere();
@@ -224,6 +228,7 @@ function initialisePlayer() {
     Player.touchingWall = false;
     Player.holdingWall = false;
     Player.jumping = false;
+    Player.respawn = [];
     
     Player.removeColliders()
     Player.addCollider(1, 7, 12, 17)
@@ -289,7 +294,7 @@ function saveSelect() {
     text("Select Save", 128, 40)
 }
 
-function settings() {
+function settings() { // draw custom slider, p5 sliders dont look nice, need settings for sound, music (sliders) and some others
     loadMenu(2)
     getKeyPressed();
     menuSelect(2);
@@ -297,6 +302,8 @@ function settings() {
     if (Input.menu.back == true) {
         transitionScene(1, 200)
     }
+    image(slider_bar, 140, 125)
+    image(slider_bar, 140, 170)
     text("Settings", 128, 40)
 }
 
@@ -324,6 +331,24 @@ function initialiseMenu() {
     menuOptions.img = menu_box_sprite;
     menuOptions.visible = false;
     menuOptions.scale = 2;
+    menuOptions.textSize = 12;
+    menuOptions.textColor = '#816271';
+    menuOptions.textStroke = '#000000'
+
+    Slider = new Group();
+    Slider.collider = 'n';
+    Slider.img = slider_idicator;
+    Slider.scale = 2;
+
+    TextBox = new Group();
+    TextBox.colour = '#08141e'
+    TextBox.fill = '#08141e'
+    TextBox.stroke = '#08141e'
+    TextBox.textSize = 12;
+    TextBox.textColor = '#816271';
+    TextBox.textStroke = '#000000'
+    TextBox.visible = true
+    TextBox.collider = 'n'
 }
 
 function initialiseCheckPoints() {
@@ -341,7 +366,7 @@ function initialiseCheckPoints() {
 function initialiseBoundaries() {
     Boundaries = new Group();
     Boundaries.collider = 'n';
-    Boundaries.visible = true;
+    Boundaries.visible = false;
 }
 
 function spawnPlayer(x, y) {
@@ -430,29 +455,23 @@ function spawnObstacles() { // improve - this is kinda shit currently like why d
     }
 }
 
-function setUpBoundaries() {
-    for (i = 0; i < 4; i++) {
+function setUpBoundaries() { //might not need top boundary or even sides
+    for (i = 0; i < 3; i++) {
         let boundary_ = new Boundaries.Sprite();
         switch (i) {
-            case 0: 
-                boundary_.x = CANVASHEIGHT / 2;
-                boundary_.y = 0;
-                boundary_.w = CANVASWIDTH;
-                boundary_.h = 10;
-                break;
-            case 1:
+            case 0:
                 boundary_.x = CANVASWIDTH;
                 boundary_.y = CANVASHEIGHT / 2;
                 boundary_.w = 10;
                 boundary_.h = CANVASHEIGHT;
                 break;
-            case 2:
+            case 1:
                 boundary_.x = CANVASWIDTH / 2;
                 boundary_.y = CANVASHEIGHT;
                 boundary_.w = CANVASWIDTH;
                 boundary_.h = 10;
                 break;
-            case 3: 
+            case 2: 
                 boundary_.x = 0;
                 boundary_.y = CANVASHEIGHT / 2;
                 boundary_.w = 10;
@@ -463,18 +482,15 @@ function setUpBoundaries() {
 }
 
 function updateBoundaries() {
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 3; i++) {
         switch (i) {
-            case 0: 
-                Boundaries[i].y = camera.y - (CANVASHEIGHT / 2);
-                break;
-            case 1:
+            case 0:
                 Boundaries[i].y = camera.y;
                 break;
-            case 2:
+            case 1:
                 Boundaries[i].y = camera.y + (CANVASHEIGHT / 2);
                 break;
-            case 3: 
+            case 2: 
                 Boundaries[i].y = camera.y;
                 break;
         }
@@ -632,7 +648,6 @@ function animatePlayer() {
         Player.mirror.x = false;
     }
 
-
     if (Player.jumping == true && (Input.movement.left == true || Input.movement.right == true)) {
         Player.changeAni('jump')
     } else {
@@ -681,9 +696,6 @@ function loadMenu(menu) {
                     menuOptions_.y = 170;
                 }
             }
-            menuOptions.textSize = 12;
-            menuOptions.textColor = '#816271';
-            menuOptions.textStroke = '#000000'
             menuOptions[0].text = "New Game"
             menuOptions[1].text = "Continue"
             menuOptions[2].text = "Endless"
@@ -707,6 +719,18 @@ function loadMenu(menu) {
                 let menuOptions_ = new menuOptions.Sprite();
                 menuOptions_.x = 128;
                 menuOptions_.y = 80 + (i * 45)
+                if (i < 2) {
+                    let slider_ = new Slider.Sprite();
+                    slider_.x = 140;
+                    slider_.y = 80 + (i * 45)
+                    slider_.visible = true;
+                    let text_box_ = new TextBox.Sprite(55, 80 + (i * 45), 60, 22);
+                    if (i == 0) {
+                        text_box_.text = "Music";
+                    } else {
+                        text_box_.text = "Sounds"                        
+                    }
+                }
             }
             Menu.loaded = true;
         }
@@ -776,6 +800,15 @@ function highlightMenu() {
                 menuOptions[i].img = big_menu_box_sprite;
                 menuOptions[i].textColor = '#816271';
             }      
+        }
+        if (TextBox.length > 0) {
+            if (i < TextBox.length -1 && i == Menu.selected_menu) {
+                TextBox[i].colour = '#0d2130';
+                TextBox[i].textColor = '#f6d6db';
+            } else {
+                TextBox[i].colour = '#08141e';
+                TextBox[i].textColor = '#816271';
+            }
         }
 
     }
@@ -924,7 +957,7 @@ function loadLevel(level) {
             current_stage_json = level_2_json;
             break;
     }
-
+    Player.respawn = current_stage_json.start_pos
 }
 
 function triggerRollingRock(index) {
@@ -996,8 +1029,8 @@ function getGridPosition(index) {
 function activateCheckpoint(index) {
     CheckPoints[index].activated = true;
     CheckPoints[index].changeAni('active');
-    // set respawn
-    moveCamera(current_stage_json.objects.flags[index].camera, 1) // get from json (whatever value is best for that checkpoint)
+    Player.respawn = [CheckPoints[i].x, CheckPoints[i].y]
+    moveCamera(current_stage_json.objects.flags[index].camera, 1);
 }
 
 function collisionDetection() {
@@ -1008,25 +1041,29 @@ function collisionDetection() {
             }
         }
     }
+    if (Player.collides(Spikes)) {
+        killPlayer();
+    }
 
 }
 
 function boundaryCheck() {
-    if (Player.collides(Boundaries)) {
+    if (Player.overlaps(Boundaries)) {
         killPlayer();
     }
 }
 
 function killPlayer() {
-
+    // do some sort of death anim / respawn timer
+    // also could do different death types so like falling / spikes should be different
+    respawnPlayer();
 }
 
 function respawnPlayer() {
-    
+    Player.x = Player.respawn[0];
+    Player.y = Player.respawn[1];
 }
 
-//colums = tilemap[0]/length()
-//rows = tilemap.length()
 
 
 
