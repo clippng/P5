@@ -4,6 +4,7 @@ const CANVASHEIGHT = 256;
 // do player animations
 // make each object have a cooldown for grab / wall kick
 // make in game overlay and pause menu
+// fix clouds spawning on screen
 let currentScene = 0; 
 
 let n;
@@ -15,7 +16,7 @@ let current_stage_json, level_1_json, level_2_json;
 let scene_cache;
 let flag_anim;
 
-let light_spikes, dark_spikes;
+let light_spikes, dark_spikes, light_spikes_bottom, dark_spikes_bottom;
 let clouds = []
 
 let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
@@ -23,7 +24,7 @@ let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, 
 let currentLevel;
 let object = 0;
 
-let Tiles, CheckPoints
+let Tiles, CheckPoints, Spikes
 
 let menuOptions, menu_box_sprite, highlighted_menu_box_sprite, big_menu_box_sprite, highlighted_big_menu_box_sprite;
 
@@ -36,6 +37,8 @@ let levelLoaded = false;
 
 let grab_platform;
 
+let Boundaries;
+
 
 const Input = {
     movement: {
@@ -44,7 +47,8 @@ const Input = {
         grab: false,
         left: false,
         right: false,
-        pause: false
+        pause: false,
+        locked: false
     },
     menu: {
         confirm: false,
@@ -81,6 +85,7 @@ function preload() {
     ball_sprite = loadImage('Sprites/Obstacles/ball_obstacle.png');
     overlay = loadImage('Sprites/Other/overlay.png');
     dark_spikes = loadImage('Sprites/Obstacles/dark_spikes.png');
+    dark_spikes_bottom = loadImage('Sprites/Obstacles/dark_spike_bottom.png')
     light_spikes = loadImage('Sprites/Obstacles/light_spikes.png');
     big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box.png');
     highlighted_big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box_H.png');
@@ -119,6 +124,7 @@ function setup() {
     initialiseObstacles();
     initialiseTiles();
     initialiseCheckPoints();
+    initialiseBoundaries();
 
     world.gravity.y = 5
 
@@ -147,8 +153,10 @@ function draw() {
         settings();
     }
     if (currentScene != 0) {
-        //allSprites.draw();
-        image(overlay, 0, 0, 256, 256)
+        camera.on();
+        allSprites.draw();
+        camera.off()
+        //image(overlay, 0, 0, 256, 256)
     }
 }
 
@@ -189,6 +197,8 @@ function game() {
         initialiseLevel();
         spawnPlayer(current_stage_json.start_pos[0], current_stage_json.start_pos[1]);
         spawnCheckPoints();
+        spawnSpikes();
+        setUpBoundaries();
         levelLoaded = true;
     }
 
@@ -207,7 +217,6 @@ function initialisePlayer() {
     Player.bounciness = 0.001
     Player.dashCooldown = 1000;
     Player.dashOnCooldown = false;
-    Player.movementLocked = false;
     Player.facingDirection = 'right';
     Player.jumps = 0;
     Player.maxJumps = 2;
@@ -303,9 +312,10 @@ function initialiseObstacles() {
     RollingRocks.img = ball_sprite;
     RollingRocks.friction = 0;
 
-    RoofSpikes = new Group();
-
-    WallSpikes = new Group();
+    Spikes = new Group();
+    Spikes.facing = 'south'
+    Spikes.img = dark_spikes;
+    Spikes.collider = 's'
 }
 
 function initialiseMenu() {
@@ -326,6 +336,12 @@ function initialiseCheckPoints() {
         active: { width: 16, height: 32, x: 0, y: 0, frames: 7 },
         idle: { width: 16, height: 32, x: 112, y: 0, frames: 1 }
     });
+}
+
+function initialiseBoundaries() {
+    Boundaries = new Group();
+    Boundaries.collider = 'n';
+    Boundaries.visible = true;
 }
 
 function spawnPlayer(x, y) {
@@ -387,7 +403,7 @@ function spawnTiles() {
 }
 
 function updateTiles() {
-
+    
 }
 
 function spawnCheckPoints() {
@@ -399,19 +415,68 @@ function spawnCheckPoints() {
         checkpoint_.collider = 'n';
         checkpoint_.visible = true;
     }
-
 }
 
-
-function spawnObstacles() {
-    for (i = 0; i < current_stage_json.number_of_obstacles; i++) {
+function spawnObstacles() { // improve - this is kinda shit currently like why do I have a seperate function for getting json info???
+    for (i = 0; i < current_stage_json.objects.obstacles.length; i++) {
         let jsonData = getObstacle(i)
         if (jsonData[0] = "rolling_rock") {
             let obstacle_ = new RollingRocks.Sprite()
-            obstacle_.applyTorque(1)
+            obstacle_.applyTorque(1);
             obstacle_.x = jsonData[1];
             obstacle_.y = jsonData[2];
             obstacle_.shape = 'circle'
+        }
+    }
+}
+
+function setUpBoundaries() {
+    for (i = 0; i < 4; i++) {
+        let boundary_ = new Boundaries.Sprite();
+        switch (i) {
+            case 0: 
+                boundary_.x = CANVASHEIGHT / 2;
+                boundary_.y = 0;
+                boundary_.w = CANVASWIDTH;
+                boundary_.h = 10;
+                break;
+            case 1:
+                boundary_.x = CANVASWIDTH;
+                boundary_.y = CANVASHEIGHT / 2;
+                boundary_.w = 10;
+                boundary_.h = CANVASHEIGHT;
+                break;
+            case 2:
+                boundary_.x = CANVASWIDTH / 2;
+                boundary_.y = CANVASHEIGHT;
+                boundary_.w = CANVASWIDTH;
+                boundary_.h = 10;
+                break;
+            case 3: 
+                boundary_.x = 0;
+                boundary_.y = CANVASHEIGHT / 2;
+                boundary_.w = 10;
+                boundary_.h = CANVASHEIGHT;
+                break;
+        }
+    }
+}
+
+function updateBoundaries() {
+    for (i = 0; i < 4; i++) {
+        switch (i) {
+            case 0: 
+                Boundaries[i].y = camera.y - (CANVASHEIGHT / 2);
+                break;
+            case 1:
+                Boundaries[i].y = camera.y;
+                break;
+            case 2:
+                Boundaries[i].y = camera.y + (CANVASHEIGHT / 2);
+                break;
+            case 3: 
+                Boundaries[i].y = camera.y;
+                break;
         }
     }
 }
@@ -425,8 +490,34 @@ function getObstacle(index) {
     return obstacle_;
 }
 
-function moveCamera(position) {
-    camera.moveTo(128, position, 100);
+function spawnSpikes() {
+    for (i = 0; i < current_stage_json.objects.spikes.length; i++) {
+        let spike_ = new Spikes.Sprite();
+        spike_.x = current_stage_json.objects.spikes[i].x;
+        spike_.y = current_stage_json.objects.spikes[i].y
+        spike_.visible = true;
+        spike_.facing = current_stage_json.objects.spikes[i].facing
+        switch (current_stage_json.objects.spikes[i].facing) {
+            case "south":
+                break;
+            case "north":
+                spike_.img = dark_spikes_bottom
+                break;
+            case "east":
+                spike_.rotation = 90;
+                break;
+            case "west":
+                spike_.rotation = 270;
+                break
+        }
+    }
+}
+
+async function moveCamera(position, speed) {
+    Input.movement.locked = true;
+    await camera.moveTo(128, position, speed);
+    updateBoundaries()
+    Input.movement.locked = false;
 }
 
 function initialiseLevel() {
@@ -446,7 +537,7 @@ function movePlayer() {
         Player.jumping = false;
         setJumps(1)
     }
-    if (Player.movementLocked == false) {
+    if (Input.movement.locked == false) {
         if (Input.movement.grab == true && Player.touchingWall == true && Input.movement.jump == false) {
             grabWall();
         } else if (Player.holdingWall == true) {
@@ -472,9 +563,12 @@ function movePlayer() {
 
         if (Input.movement.dash == true) {
             playerDash();
-        }
+        }    
+        animatePlayer();
+    } else {
+        Player.changeAni('idle')
     }
-    animatePlayer();
+
 }
 
 function playerJump() {
@@ -818,7 +912,6 @@ function sceneDeconstructor(scene) {
             menuOptions.removeAll();
             Menu.loaded = false;
             break;
-
     }
 }
 
@@ -826,6 +919,9 @@ function loadLevel(level) {
     switch(level) {
         case 1:
             current_stage_json = level_1_json;
+            break;
+        case 2:
+            current_stage_json = level_2_json;
             break;
     }
 
@@ -901,7 +997,7 @@ function activateCheckpoint(index) {
     CheckPoints[index].activated = true;
     CheckPoints[index].changeAni('active');
     // set respawn
-    camera.moveTo(128, current_stage_json.objects.flags[index].camera, 1) // get from json (whatever value is best for that checkpoint)
+    moveCamera(current_stage_json.objects.flags[index].camera, 1) // get from json (whatever value is best for that checkpoint)
 }
 
 function collisionDetection() {
@@ -913,6 +1009,20 @@ function collisionDetection() {
         }
     }
 
+}
+
+function boundaryCheck() {
+    if (Player.collides(Boundaries)) {
+        killPlayer();
+    }
+}
+
+function killPlayer() {
+
+}
+
+function respawnPlayer() {
+    
 }
 
 //colums = tilemap[0]/length()

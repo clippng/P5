@@ -1,7 +1,6 @@
 {
   "start_pos": [30, 200],
-  "scroll_speed": 0.1,
-  "number_of_obstacles": 1,
+  "theme": "grass",
   "objects": 
   {
     "flags": [
@@ -16,10 +15,44 @@
         "camera": -200
       }
     ],
-    "fruit": {
+    "fruit": [
+      {
       "x": 0,
-      "y": 0
-    },
+      "y": 0        
+      }
+    ],
+    "spikes": [
+      {
+        "x": 48,
+        "y": 243,
+        "facing": "north"
+      },
+      {
+        "x": 64,
+        "y": 243,
+        "facing": "north"
+      },
+      {
+        "x": 80,
+        "y": 243,
+        "facing": "north"
+      },
+      {
+        "x": 128,
+        "y": 243,
+        "facing": "north"
+      },
+      {
+        "x": 144,
+        "y": 243,
+        "facing": "north"
+      },
+      {
+        "x": 160,
+        "y": 243,
+        "facing": "north"
+      }
+    ],
     "obstacles": [
       {
         "type": "rolling_rock",
