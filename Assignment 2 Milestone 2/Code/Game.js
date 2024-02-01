@@ -3,12 +3,15 @@
 the player, spawning levels and other useful functions */
 /////////////////////////////////////////////////////////////////////////////////
 
-// used for grabWall() function
-let grab_platform;
+
 // Group definitions
-let Platforms, Boundaries, Tiles, CheckPoints, Spikes
+let Platforms, Boundaries, Tiles, CheckPoints, Spikes, Icicles
+
 // variables to store JSON data
 let current_stage_json, level_1_json, level_2_json;
+
+// used for grabWall() function
+let grab_platform;
 
 // Object to store game related data, camera cache is used for moving the camera
 // between checkpoints
@@ -37,6 +40,7 @@ function newGame() {
     Game.game_running = true;
     Game.current_level = 1;
     initialiseAtmosphere();
+    allSprites.visible = true;
 }
 
 // Initialises the player variables, it's animations and various colliders
@@ -130,6 +134,12 @@ function initialiseTiles() {
     Tiles.w = 16;
     Tiles.h = 16;
     Tiles.collider = 's';
+
+    WallTiles = new Group()
+    WallTiles.w = 16;
+    WallTiles.h = 16;
+    WallTiles.collider = 's';
+    WallTiles.colour = 0;
 }
 
 // Creates all the obstacle groups (they should probably be seperate but it's fine)
@@ -137,11 +147,16 @@ function initialiseObstacles() {
     RollingRocks = new Group();
     RollingRocks.img = rolling_rock_sprite;
     RollingRocks.friction = 0;
+    RollingRocks.collider = 's';
 
     Spikes = new Group();
     Spikes.facing = 'south'
     Spikes.img = dark_spikes;
     Spikes.collider = 'n'
+
+    Icicles = new Group();
+    Icicles.collider = 's';
+    Icicles.img = icicle_sprite_3;
 }
 
 // Creates the CheckPoints group (sometimes to refered to as flags)
@@ -185,15 +200,35 @@ function spawnCheckPoints() {
 }
 
 // Spawns the current level obstacles, still should probably have seperate functions
-function spawnObstacles() { // improve - this is kinda shit currently like why do I have a seperate function for getting json info???
+function spawnObstacles() {
     for (i = 0; i < current_stage_json.objects.obstacles.length; i++) {
         let jsonData = getObstacle(i)
-        if (jsonData[0] = "rolling_rock") {
+        if (jsonData[0] == "rolling_rock") {
             let obstacle_ = new RollingRocks.Sprite()
-            obstacle_.applyTorque(1);
             obstacle_.x = jsonData[1];
             obstacle_.y = jsonData[2];
+            obstacle_.trigger = jsonData[3]
+            obstacle_.default_x = jsonData[1];
+            obstacle_.default_y = jsonData[2];
+            obstacle_.cooldown = 2000;
+            obstacle_.on_cooldown = false;
+            obstacle_.falling = false;
             obstacle_.shape = 'circle'
+            obstacle_.visible = true;
+        } else if (jsonData[0] == "icicle") {
+            let obstacle_ = new Icicles.Sprite();
+            obstacle_.rotationLock = true;
+            obstacle_.x = jsonData[1];
+            obstacle_.y = jsonData[2];
+            obstacle_.trigger = jsonData[3];
+            obstacle_.default_x = jsonData[1];
+            obstacle_.default_y = jsonData[2];
+            obstacle_.cooldown = 2000;
+            obstacle_.on_cooldown = false;
+            obstacle_.falling = false;
+            obstacle_.visible = true;
+            obstacle_.removeColliders();
+            obstacle_.addCollider(-4, -5, 3, 3);
         }
     }
 }
@@ -205,15 +240,12 @@ function spawnTiles() {
     let n = current_stage_json.tilemap[0].length * current_stage_json.tilemap.length
     for (i = 0; i < n; i++) {
         let tile_ = getTile(i)
-        if (tile_ != '/') {
-            let tile = new Tiles.Sprite()                    
-            let pos = getTilePosition(i);
+        let pos = getTilePosition(i);
+        if (tile_ != '/' && tile_ != 'p') {
+            let tile = new Tiles.Sprite();
             tile.x = pos.x;
-            tile.y = pos.y;
+            tile.y = pos.y;                 
             switch (tile_) {
-                case 'p':
-                    tile.colour = 0;
-                    break;
                 case 'N':
                     tile.img = grassN;
                     break;
@@ -258,6 +290,10 @@ function spawnTiles() {
                     tile.img = wooden_platform_m
                     break;
             }
+        } else if (tile_ == 'p') {
+            let tile = new WallTiles.Sprite();
+            tile.x = pos.x;
+            tile.y = pos.y;
         }
     }
 }
@@ -307,14 +343,13 @@ function updateBoundaries() {
 }
 
 // Just gets obstacle data based of an index number (index of the array 
-// in JSON file) and returns it as an array. Old function, not great but 
-// works
+// in JSON file) and returns it as an array in the format [type, x, y, radius]. 
 function getObstacle(index) {
     let obstacle_ = [];
     obstacle_[0] = current_stage_json.objects.obstacles[index].type;
     obstacle_[1] = current_stage_json.objects.obstacles[index].x_pos;
     obstacle_[2] = current_stage_json.objects.obstacles[index].y_pos;
-
+    obstacle_[3] = current_stage_json.objects.obstacles[index].trigger_radius;
     return obstacle_;
 }
 
@@ -487,11 +522,12 @@ function movePlayer() {
             releaseWall();
         }
         if (Player.holdingWall == false) {
-            if (Input.movement.left == true && !(player_collider_left.overlapping(Tiles))) {
+            if (Input.movement.left == true && !(player_collider_left.overlapping(Tiles) || 
+            player_collider_left.overlapping(WallTiles))) {
                 Player.vel.x = -1;
                 Player.facingDirection = 'left';
             } else if (Input.movement.right == true && !(player_collider_right.overlapping(Tiles) || 
-            player_collider_right.overlapping(Tiles))) {
+            player_collider_right.overlapping(WallTiles))) {
                 Player.vel.x = 1;
                 Player.facingDirection = 'right';
             } else {
@@ -534,7 +570,7 @@ function playerJump() {
     }
 } 
 
-// Literally just sets the current jumps value ??
+// Literally just sets the current jumps value ?? Why did I write this ??
 function setJumps(val) {
     Player.jumps = val;
 }
@@ -617,7 +653,7 @@ function boundaryCheck() {
     }
 }
 
-// Detects player activating flags and dying to spikes
+// Detects player activating flags and dying to various obstacles
 function collisionDetection() {
     for (i = 0; i < current_stage_json.objects.flags.length; i++) {
         if (player_hit_box.overlaps(CheckPoints[i])) {
@@ -628,7 +664,8 @@ function collisionDetection() {
             }
         }
     }
-    if (player_hit_box.overlaps(Spikes)) {
+    if (player_hit_box.overlaps(Spikes) || Player.collides(RollingRocks) ||
+        Player.collides(Icicles)) {
         killPlayer();
     }
 
@@ -754,8 +791,8 @@ function activateCheckpoint(index) {
     CheckPoints[index].changeAni('active');
     Player.respawn = [CheckPoints[i].x, CheckPoints[i].y]
     moveCamera(current_stage_json.objects.flags[index].camera, 1);
+    Game.camera_cache = current_stage_json.objects.flags[index].camera;
     if (current_stage_json.objects.flags[index].camera_type == "follow") {
-        Game.camera_cache = current_stage_json.objects.flags[index].camera;
         changeCamera(1);
     }
 }
@@ -771,6 +808,7 @@ function killPlayer() {
 function respawnPlayer() {
     Player.x = Player.respawn[0];
     Player.y = Player.respawn[1];
+    camera.y = Game.camera_cache;
 }
 
 // Updates the camera mode to either stay static or follow the
@@ -793,6 +831,52 @@ function updateCamera() {
     }
 }
 
-function triggerRollingRock(index) {
-    RollingRocks[i].vel.x = 0.1
+function obstacleDetection() { // fix detection in the negative y positions
+    for (i = 0; i < RollingRocks.length; i++) {
+        if (abs(Player.y) - abs(RollingRocks[i].y) < RollingRocks[i].radius) {
+            triggerRollingRock(i);
+            RollingRocks[i].debug = true
+        }
+        if (RollingRocks[i].collides(WallTiles) || RollingRocks[i].collides(Player) || 
+            RollingRocks[i].collides(Spikes)) {
+            RollingRocks[i].x = RollingRocks[i].default_x;
+            RollingRocks[i].y = RollingRocks[i].default_y;
+            RollingRocks[i].collider = 's';
+        }
+    }
+    for (i = 0; i < Icicles.length; i++) {
+        if (Icicles[i].x - Player.x < Icicles[i].trigger && Icicles[i].x - Player.x > 
+            -(Icicles[i].trigger) && Icicles[i].y < Player.y && Icicles[i].on_cooldown == false) {
+            Icicles[i].falling = true;
+            triggerIcicle(i);
+        }
+        if ((Icicles[i].collides(Tiles) || Icicles[i].collides(WallTiles) || 
+            Icicles[i].collides(Player)) && Icicles[i].falling == false) {
+            Icicles[i].x = Icicles[i].default_x;
+            Icicles[i].y = Icicles[i].default_y;
+            Icicles[i].collider = 's';
+            Icicles[i].img = icicle_sprite_3;
+        }
+    }
+}
+
+async function triggerRollingRock(index) {
+    RollingRocks[index].on_cooldown = true;
+    RollingRocks[index].falling = true;
+    RollingRocks[index].collider = 'd';
+}
+
+async function triggerIcicle(index) { 
+    Icicles[index].on_cooldown = true;
+    Icicles[index].img = icicle_sprite_2;
+    await sleep(800);
+    Icicles[index].img = icicle_sprite_1;
+    Icicles[index].addCollider(-4, -1, 3, 9);
+    Icicles[index].collider = 'd'
+    await sleep(300);
+    Icicles[index].falling = false;
+    await sleep(Icicles[index].cooldown);
+    Icicles[index].removeColliders();
+    Icicles[index].addCollider(-4, -5, 3, 3);
+    Icicles[index].on_cooldown = false;
 }

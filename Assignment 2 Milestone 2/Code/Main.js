@@ -24,9 +24,10 @@ let flag_anim;
 let slider_idicator, slider_bar
 let light_spikes, dark_spikes, light_spikes_bottom, dark_spikes_bottom;
 let cloud_platform_1, cloud_platform_2, cloud_platform_3, wooden_platform, wooden_platform_m, outcrop;
-let icicle_sprite, rolling_rock_sprite;
+let icicle_sprite_1, icicle_sprite_2, icicle_sprite_3, rolling_rock_sprite;
 let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
 let menuOptions, menu_box_sprite, highlighted_menu_box_sprite, big_menu_box_sprite, highlighted_big_menu_box_sprite;
+
 
 // Cache used to check if scene has changed recently
 let scene_cache;
@@ -81,6 +82,9 @@ function preload() {
     outcrop = loadImage('Sprites/Obstacles/outcrop_platform.png');
     wooden_platform = loadImage('Sprites/Obstacles/wooden_platform.png');
     wooden_platform_m = loadImage('Sprites/Obstacles/wooden_platform_m.png');
+    icicle_sprite_1 = loadImage('Sprites/Obstacles/icicle_1.png');
+    icicle_sprite_2 = loadImage('Sprites/Obstacles/icicle_2.png');
+    icicle_sprite_3 = loadImage('Sprites/Obstacles/icicle_3.png');
 
     Clouds.sprites[0] = loadImage('Sprites/Clouds/cloud_1.png');
     Clouds.sprites[1] = loadImage('Sprites/Clouds/cloud_2.png');
@@ -130,7 +134,7 @@ function setup() {
 function draw() {
     background(0)
     frameRate(60);
-    renderStats(0, 0)
+    //renderStats(0, 0)
     getKeyPressed();
     sceneHandler();
     if (currentScene == 0) {                // loading screen
@@ -147,13 +151,6 @@ function draw() {
 
     } else if (currentScene == 6) {        // settings
         settings();
-    }
-    if (currentScene != 0) { // maybe get rid of this
-        textAlign(CENTER); 
-        fill('#816271');
-        stroke(0);
-        textSize(20);
-        text(round(Player.y), 20, 20)
     }
 }
 
@@ -174,6 +171,9 @@ function loadingScreen() {
         text("Loading...", 128, 215);
     }
     image(overlay, 64, 64, 128, 128)
+    fill('#816271');
+    stroke(0);
+    textSize(20);
 }
 
 // Main menu scene controller
@@ -199,6 +199,7 @@ function game() {
         spawnPlayer(current_stage_json.start_pos[0], current_stage_json.start_pos[1]);
         spawnCheckPoints();
         spawnSpikes();
+        spawnObstacles();
         spawnPlatforms();
         setUpBoundaries();
         Game.level_loaded = true;
@@ -209,6 +210,7 @@ function game() {
     movePlayer();
     updatePlatforms();
     movePlatforms();
+    obstacleDetection();
     updateCamera();
     drawOverlay();
 }

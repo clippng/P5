@@ -157,22 +157,59 @@
     "obstacles": [
       {
         "type": "rolling_rock",
-        "x_pos": 128,
-        "y_pos": 30
+        "x_pos": 60,
+        "y_pos": -10,
+        "trigger_radius": 32
+      },
+      {
+        "type": "rolling_rock",
+        "x_pos": 86,
+        "y_pos": -390,
+        "trigger_radius": 32
+      },
+      {
+        "type": "rolling_rock",
+        "x_pos": 60,
+        "y_pos": -390,
+        "trigger_radius": 32
+      },
+      {
+        "type": "icicle",
+        "x_pos": 116,
+        "y_pos": 104,
+        "trigger_radius": 20
+      },
+      {
+        "type": "icicle",
+        "x_pos": 184,
+        "y_pos": 72,
+        "trigger_radius": 20
+      },
+      {
+        "type": "icicle",
+        "x_pos": 196,
+        "y_pos": 72,
+        "trigger_radius": 20
+      },
+      {
+        "type": "icicle",
+        "x_pos": 214,
+        "y_pos": 72,
+        "trigger_radius": 20
       }
     ]
   },
   "columns": 17,
   "rows": 18,
   "tilemap": [
-      "p///////////////p",
-      "p///////////////p",
-      "p///////////////p",
-      "p///////////////p",
-      "p///////////////p",
-      "p///////////////p",
-      "p///////////////p",
-      "p///////////////p",
+      "p//////////////Cp",
+      "p///////////CCC/p",
+      "p/////////CC////p",
+      "p///////CC//////p",
+      "p//////C////////p",
+      "p/////C/////////p",
+      "p////C//////////p",
+      "p////C//////////p",
       "pCCCN///////////p",
       "pCCCN///////////p",
       "pCCN////////////p",
