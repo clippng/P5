@@ -1,16 +1,17 @@
 const CANVASWIDTH = 256;
 const CANVASHEIGHT = 256;
 
-// make each object have a cooldown for grab / wall kick
+// make each object have a cooldown for grab / wall kick and remove grabbing side boundaries
 // make in game overlay and pause menu
 // fix clouds spawning on screen
 // Idea to count save stats so like count jumps / deaths etc -- would satisfy the leaderboard requirement i think ?
 // try to find a way to make the text clearer (stroke ?)
 // fix text boxes or find a way to render text above sprites
+// falling icicles, fruit, rolling rocks
 let currentScene = 0; 
 
 let n;
-let Player, player_collider_bottom, player_collider_left, player_collider_right;
+let Player, player_collider_bottom, player_collider_left, player_collider_right, player_hit_box;
 let player_sprite, player_run_anim, player_grab_anim, player_wall_jump_anim;
 let mainBackgroundImg, smallBackgroundImg;
 let current_stage_json, level_1_json, level_2_json;
@@ -19,6 +20,9 @@ let flag_anim;
 let slider_idicator, slider_bar
 let light_spikes, dark_spikes, light_spikes_bottom, dark_spikes_bottom;
 let clouds = []
+let cloud_platform_1, cloud_platform_2, cloud_platform_3, wooden_platform, wooden_platform_m;
+let icicle_sprite;
+let outcrop;
 
 let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
 
@@ -38,8 +42,12 @@ let gameRunning = false;
 let levelLoaded = false;
 
 let grab_platform;
+let Platforms;
 
 let Boundaries;
+
+let camera_following_player = false;
+let camera_cache;
 
 
 const Input = {
@@ -92,6 +100,12 @@ function preload() {
     highlighted_big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box_H.png');
     slider_bar = loadImage('Sprites/Other/slider_bar.png');
     slider_idicator = loadImage('Sprites/Other/slider_indicator.png');
+    cloud_platform_1 = loadImage('Sprites/Obstacles/cloud_platform_1.png');
+    cloud_platform_2 = loadImage('Sprites/Obstacles/cloud_platform_2.png');
+    cloud_platform_3 = loadImage('Sprites/Obstacles/cloud_platform_3.png');
+    outcrop = loadImage('Sprites/Obstacles/outcrop_platform.png');
+    wooden_platform = loadImage('Sprites/Obstacles/wooden_platform.png');
+    wooden_platform_m = loadImage('Sprites/Obstacles/wooden_platform_m.png');
 
     clouds[0] = loadImage('Sprites/Clouds/cloud_1.png');
     clouds[1] = loadImage('Sprites/Clouds/cloud_2.png');
@@ -128,6 +142,7 @@ function setup() {
     initialiseTiles();
     initialiseCheckPoints();
     initialiseBoundaries();
+    initialisePlatforms();
 
     world.gravity.y = 5
 
@@ -160,6 +175,7 @@ function draw() {
         allSprites.draw();
         camera.off()
         image(overlay, 0, 0, 256, 256)
+        text(round(Player.y), 20, 20)
     }
 }
 
@@ -201,6 +217,7 @@ function game() {
         spawnPlayer(current_stage_json.start_pos[0], current_stage_json.start_pos[1]);
         spawnCheckPoints();
         spawnSpikes();
+        spawnPlatforms();
         setUpBoundaries();
         levelLoaded = true;
     }
@@ -210,6 +227,9 @@ function game() {
     updateTiles();
     atmosphere();
     movePlayer();
+    updatePlatforms();
+    movePlatforms();
+    updateCamera();
 }
 
 function initialisePlayer() {
@@ -229,9 +249,9 @@ function initialisePlayer() {
     Player.holdingWall = false;
     Player.jumping = false;
     Player.respawn = [];
-    
+
     Player.removeColliders()
-    Player.addCollider(1, 7, 12, 17)
+    Player.addCollider(1, 7, 10, 15)
 
     Player.spriteSheet = 'Sprites/Player/player_sprite_sheet.png'
     Player.anis.frameDelay = 10
@@ -273,6 +293,15 @@ function initialisePlayer() {
     player_collider_right.visible = false;
     player_collider_right.mass = 0.01;
 
+    player_hit_box = new Sprite();
+    player_hit_box.collider = 'n';
+    player_hit_box.w = 7;
+    player_hit_box.h = 11;
+    player_hit_box.x = Player.x + 1;
+    player_hit_box.y = Player.y + 6
+    player_hit_box.visible = false;
+    player_hit_box.mass = 0.01;
+
     let joint_bottom = new GlueJoint(Player, player_collider_bottom);
     joint_bottom.visible = false;
 
@@ -281,6 +310,9 @@ function initialisePlayer() {
 
     let joint_right = new GlueJoint(Player, player_collider_right);
     joint_right.visible = false;
+
+    let joint_center = new GlueJoint(Player, player_hit_box);
+    joint_center.visible = false;
 }
 
 function saveSelect() {
@@ -322,7 +354,7 @@ function initialiseObstacles() {
     Spikes = new Group();
     Spikes.facing = 'south'
     Spikes.img = dark_spikes;
-    Spikes.collider = 's'
+    Spikes.collider = 'n'
 }
 
 function initialiseMenu() {
@@ -369,6 +401,11 @@ function initialiseBoundaries() {
     Boundaries.visible = false;
 }
 
+function initialisePlatforms() { 
+    Platforms = new Group();
+    Platforms.collider = 'n';
+}
+
 function spawnPlayer(x, y) {
     Player.x = x;
     Player.y = y;
@@ -390,8 +427,8 @@ function spawnTiles() {
         if (tile_ != '/') {
             let tile = new Tiles.Sprite()                    
             let pos = getTilePosition(i);
-            tile.x = pos.y
-            tile.y = pos.x - 312 // make this part of the getTilePosition() function
+            tile.x = pos.x
+            tile.y = pos.y //- 376// make this part of the getTilePosition() function
             switch (tile_) {
                 case 'p':
                     tile.colour = 0;
@@ -422,6 +459,23 @@ function spawnTiles() {
                     break;
                 case 'w':
                     tile.img = grassNW;
+                    break;
+                case '$':
+                    tile.remove();
+                    spawnFruit();
+                    break;
+                case '-':
+                    tile.img = wooden_platform;
+                    tile.debug = true;
+                    break;
+                case '_':
+                    tile.img = wooden_platform
+                    tile.mirror.x = true;
+                    tile.debug = true;
+                    break;
+                case '=':
+                    tile.img = wooden_platform_m
+                    break;
             }
         }
     }
@@ -520,11 +574,72 @@ function spawnSpikes() {
                 spike_.img = dark_spikes_bottom
                 break;
             case "east":
-                spike_.rotation = 90;
+                spike_.rotation = 270
                 break;
             case "west":
-                spike_.rotation = 270;
+                spike_.rotation = 90
                 break
+        }
+    }
+}
+
+function spawnFruit() {
+
+}
+
+function spawnPlatforms() {
+    for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
+        let platform_ = new Platforms.Sprite();
+        platform_.collider = 'n'
+        platform_.x = current_stage_json.objects.platforms[i].x;
+        platform_.y = current_stage_json.objects.platforms[i].y;
+        platform_.visible = true;
+        platform_.removeColliders();
+        if (current_stage_json.objects.platforms[i].type == "wooden") {
+            platform_.type = "wooden"
+            switch (current_stage_json.objects.platforms[i].sprite) {
+                case "left":
+                    platform_.img = wooden_platform;
+                    platform_.mirror.x = true;
+                    platform_.addCollider(0, 0, 16, 7)
+                    break;
+                case "right":
+                    platform_.img = wooden_platform
+                    platform_.addCollider(0, 0, 16, 7)
+                    break;
+                case "middle":
+                    platform_.img = wooden_platform_m;
+                    platform_.addCollider(0, 0, 16, 3)
+                    break;
+            }
+        } else if (current_stage_json.objects.platforms[i].type == "cloud") {
+            platform_.type = "cloud"
+            switch (current_stage_json.objects.platforms[i].sprite) {
+                case "small":
+                    platform_.img = cloud_platform_2;
+                    platform_.addCollider(0, 0, 16, 3);
+                    platform_.moving = "left";
+                    break;
+                case "medium":
+                    platform_.img = cloud_platform_3;
+                    platform_.addCollider(0, 0, 22, 3);
+                    platform_.moving = "right";
+                    break;
+                case "large":
+                    platform_.img = cloud_platform_1;
+                    platform_.addCollider(0, 0, 30, 3);
+                    platform_.moving = "left";
+                    break;
+            } 
+        } else if (current_stage_json.objects.platforms[i].type == "outcrop") {
+            platform_.type = "outcrop";
+            platform_.img = outcrop;
+            platform_.scale = 2;
+            platform_.collider = 'n';
+
+            let collider_top_ = new Sprite(platform_.x, platform_.y - platform_.hh + 7, platform_.w - 40, 10)
+            collider_top_.visible = false;
+            collider_top_.collider = 's';
         }
     }
 }
@@ -549,7 +664,7 @@ function movePlayer() {
     } else {
         Player.touchingWall = false;
     }
-    if (player_collider_bottom.overlapping(Tiles)) {
+    if (player_collider_bottom.overlapping(Tiles) || player_collider_bottom.overlapping(Platforms)) {
         Player.jumping = false;
         setJumps(1)
     }
@@ -1010,10 +1125,10 @@ function getTile(index) {
 function getTilePosition(index) { 
     let pos = getGridPosition(index)
     //console.log(pos)
-    rowPos = pos.y * 16
+    rowPos = (pos.y * 16) - (current_stage_json.tilemap.length * 16) + 296
     colPos = pos.x * 16
 
-    return { x: rowPos, y : colPos }
+    return { x: colPos, y : rowPos }
 }
 
 function getGridPosition(index) {
@@ -1031,24 +1146,28 @@ function activateCheckpoint(index) {
     CheckPoints[index].changeAni('active');
     Player.respawn = [CheckPoints[i].x, CheckPoints[i].y]
     moveCamera(current_stage_json.objects.flags[index].camera, 1);
+    if (current_stage_json.objects.flags[index].camera_type == "follow") {
+        camera_cache = current_stage_json.objects.flags[index].camera;
+        changeCamera(1);
+    }
 }
 
 function collisionDetection() {
     for (i = 0; i < current_stage_json.objects.flags.length; i++) {
-        if (Player.overlaps(CheckPoints[i])) {
+        if (player_hit_box.overlaps(CheckPoints[i])) {
             if (CheckPoints[i].activated == false) {
                 activateCheckpoint(i);
             }
         }
     }
-    if (Player.collides(Spikes)) {
+    if (player_hit_box.overlaps(Spikes)) {
         killPlayer();
     }
 
 }
 
 function boundaryCheck() {
-    if (Player.overlaps(Boundaries)) {
+    if (player_hit_box.overlaps(Boundaries)) {
         killPlayer();
     }
 }
@@ -1062,6 +1181,52 @@ function killPlayer() {
 function respawnPlayer() {
     Player.x = Player.respawn[0];
     Player.y = Player.respawn[1];
+}
+
+function changeCamera(type) {
+    if (type == 0) {
+        camera_following_player = false;
+    } else if (type == 1) {
+        camera_following_player = true;
+    }
+}
+
+function updateCamera() {
+    if (camera_following_player == true) {
+        if (Player.y < camera_cache) {
+            camera.y = floor(Player.y)
+        }
+    }
+}
+
+function updatePlatforms() {
+    for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
+        if (player_collider_bottom.y - player_collider_bottom.h <= Platforms[i].y && Platforms[i].type != "outcrop") {
+            Platforms[i].collider = 'k';
+        } else {
+            Platforms[i].collider = 'n';
+        }
+    }
+}
+
+function movePlatforms() {
+    for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
+        if (Platforms[i].type == "cloud") {
+            if (Platforms[i].moving == "left") {
+                console.log("k")
+                Platforms[i].x -= current_stage_json.objects.platforms[i].speed
+                if (Platforms[i].x <= current_stage_json.objects.platforms[i].range.min) {
+                    Platforms[i].moving = "right"
+                }
+            } else if (Platforms[i].moving == "right") {
+                Platforms[i].x += current_stage_json.objects.platforms[i].speed
+                if (Platforms[i].x >= current_stage_json.objects.platforms[i].range.max) {
+                    Platforms[i].moving = "left"
+                }
+                
+            }
+        }
+    }
 }
 
 
