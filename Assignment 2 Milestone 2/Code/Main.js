@@ -1,3 +1,8 @@
+////// Main /////////////////////////////////////////////////////////////////////
+/* Contains all the p5 functions preload(), setup() and draw(). Also has all the
+image definitions, input data, settings and manages scenes*/
+/////////////////////////////////////////////////////////////////////////////////
+
 const CANVASWIDTH = 256;
 const CANVASHEIGHT = 256;
 
@@ -10,21 +15,24 @@ const CANVASHEIGHT = 256;
 // fix sprite rotations bugging out
 // make loading screens actually functional
 // fix lag /memory leaks -- the longer the program is running the worse the fps is
-let currentScene = 0; 
 
+// All the varibles used to store images/ sprites (techniquely still just images)
 let Player, player_collider_bottom, player_collider_left, player_collider_right,
 player_hit_box, player_sprite, player_run_anim, player_grab_anim, player_wall_jump_anim;
-let mainBackgroundImg, smallBackgroundImg;
+let mainBackgroundImg, smallBackgroundImg, overlay;
 let flag_anim;
 let slider_idicator, slider_bar
 let light_spikes, dark_spikes, light_spikes_bottom, dark_spikes_bottom;
 let cloud_platform_1, cloud_platform_2, cloud_platform_3, wooden_platform, wooden_platform_m, outcrop;
 let icicle_sprite, rolling_rock_sprite;
 let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
+let menuOptions, menu_box_sprite, highlighted_menu_box_sprite, big_menu_box_sprite, highlighted_big_menu_box_sprite;
 
+// Cache used to check if scene has changed recently
 let scene_cache;
+let currentScene = 0; 
 
-
+// Object for storing input states
 const Input = {
     movement: {
         jump: false,
@@ -45,11 +53,13 @@ const Input = {
     }
 };
 
+// Object for storing settings
 const Settings = {
     music_volume: 100,
     sound_volume: 100
 }
 
+// Loads all the images and JSON data into variables
 function preload() {
     mainBackgroundImg = loadImage('Sprites/Other/mountain_background_big.png');
     smallBackgroundImg = loadImage('Sprites/Other/mountain_background.png');
@@ -72,11 +82,11 @@ function preload() {
     wooden_platform = loadImage('Sprites/Obstacles/wooden_platform.png');
     wooden_platform_m = loadImage('Sprites/Obstacles/wooden_platform_m.png');
 
-    clouds[0] = loadImage('Sprites/Clouds/cloud_1.png');
-    clouds[1] = loadImage('Sprites/Clouds/cloud_2.png');
-    clouds[2] = loadImage('Sprites/Clouds/cloud_3.png');
-    clouds[3] = loadImage('Sprites/Clouds/cloud_4.png');
-    clouds[4] = loadImage('Sprites/Clouds/cloud_5.png');
+    Clouds.sprites[0] = loadImage('Sprites/Clouds/cloud_1.png');
+    Clouds.sprites[1] = loadImage('Sprites/Clouds/cloud_2.png');
+    Clouds.sprites[2] = loadImage('Sprites/Clouds/cloud_3.png');
+    Clouds.sprites[3] = loadImage('Sprites/Clouds/cloud_4.png');
+    Clouds.sprites[4] = loadImage('Sprites/Clouds/cloud_5.png');
 
     grassN = loadImage('Sprites/Terrain/Grass/grass_N.png');
     grassE = loadImage('Sprites/Terrain/Grass/grass_E.png');
@@ -97,6 +107,8 @@ function preload() {
     level_2_json = loadJSON('Code/level_2.json');
 }
 
+// Calls most of the initialisation functions for group definitions and sets up global
+// variables such as gravity
 function setup() {
     new Canvas(CANVASWIDTH, CANVASHEIGHT, 'pixelated')
 
@@ -114,6 +126,7 @@ function setup() {
     transitionScene(1, 2000);
 }
 
+// Calls update functions and then the current scene controller
 function draw() {
     background(0)
     frameRate(60);
@@ -135,7 +148,7 @@ function draw() {
     } else if (currentScene == 6) {        // settings
         settings();
     }
-    if (currentScene != 0) {
+    if (currentScene != 0) { // maybe get rid of this
         textAlign(CENTER); 
         fill('#816271');
         stroke(0);
@@ -144,6 +157,7 @@ function draw() {
     }
 }
 
+// Draws the loading screen
 function loadingScreen() {
     allSprites.visible = false;
     textAlign(CENTER); 
@@ -162,17 +176,44 @@ function loadingScreen() {
     image(overlay, 64, 64, 128, 128)
 }
 
+// Main menu scene controller
 function mainMenu() {
     allSprites.visible = false;
 
     loadMenu(0);
     menuSelect(0);
     highlightMenu();
-    drawUI();
+    drawOverlay();
 
     text("Menu", 128, 40);
 }
 
+// Game controller
+function game() {
+    tint(200)
+    image(mainBackgroundImg,0 , 0)
+    noTint();
+    Player.visible = true;
+    if (Game.level_loaded == false ) {
+        initialiseLevel();
+        spawnPlayer(current_stage_json.start_pos[0], current_stage_json.start_pos[1]);
+        spawnCheckPoints();
+        spawnSpikes();
+        spawnPlatforms();
+        setUpBoundaries();
+        Game.level_loaded = true;
+    }
+    boundaryCheck();
+    collisionDetection();
+    atmosphere();
+    movePlayer();
+    updatePlatforms();
+    movePlatforms();
+    updateCamera();
+    drawOverlay();
+}
+
+// Save select scene controller
 function saveSelect() {
     loadMenu(1);
     getKeyPressed();
@@ -184,6 +225,7 @@ function saveSelect() {
     text("Select Save", 128, 40)
 }
 
+// Settings scene controller
 function settings() { // maybe move into seperate functions try to reuse menu logic as much as possible 
     loadMenu(2)
     getKeyPressed();
@@ -205,7 +247,7 @@ function settings() { // maybe move into seperate functions try to reuse menu lo
             Settings.sound_volume += 10;
         }
     }
-    drawUI();
+    drawOverlay();
     image(slider_bar, 100, 77, 125, 6)
     image(slider_bar, 100, 122, 125, 6)
     image(slider_idicator, 100 + (Settings.music_volume * 1.2), 74, 6, 12)
@@ -219,12 +261,16 @@ function settings() { // maybe move into seperate functions try to reuse menu lo
     text(sound_, 30, 130)
 }
 
+// Takes a scene to transition to and a timer, displays loading scene until timer is 
+// finished and then changes the current scene to the input scene
 async function transitionScene(scene, time) {
     currentScene = 0;
     await sleep(time)
     currentScene = scene;
 }
 
+// Stores keyboard inputs in an object, helpful for having multiple keybindings for one action
+// and seperating menu and game inputs
 function getKeyPressed() {
     if (kb.presses('up') || kb.presses('space')) {
         Input.movement.jump = true;
@@ -295,6 +341,8 @@ function getKeyPressed() {
     }
 }
 
+// Acts as a garbage collector for scenes, checks if scene has changed, if not waits 50ms and
+// tries again, if true it calls the appropriate deconstructor
 function sceneHandler() {
     if (currentScene === scene_cache) {
         setTimeout(sceneHandler, 50);
@@ -304,6 +352,8 @@ function sceneHandler() {
     scene_cache = currentScene;
 }
 
+// Used to remove all elements and resest a scene, some are made invisible and stored such as the player
+// and others are permanenetly destroyed, such as menuOptions sprites
 function sceneDeconstructor(scene) {
     switch (scene) {
         case 0:

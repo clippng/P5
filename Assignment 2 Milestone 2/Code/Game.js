@@ -1,50 +1,36 @@
-let camera_following_player = false;
-let overlay
+////// Game /////////////////////////////////////////////////////////////////////
+/* Contains all the functions used by the actual game, includes stuff like moving
+the player, spawning levels and other useful functions */
+/////////////////////////////////////////////////////////////////////////////////
 
+// used for grabWall() function
 let grab_platform;
+// Group definitions
 let Platforms, Boundaries, Tiles, CheckPoints, Spikes
-let clouds = []
+// variables to store JSON data
 let current_stage_json, level_1_json, level_2_json;
 
-
+// Object to store game related data, camera cache is used for moving the camera
+// between checkpoints
 const Game = {
     game_running: false,
     current_level: 1,
     level_loaded: false,
-    camera_cache: 128
+    camera_cache: 128,
+    camera_following_player: false
 }
 
+// Object to store highly unnesscary cloud data (not the platform clouds the barely
+// visible ones in the background)
 const Clouds = {
+    sprites: [],
     x_pos: [],
     y_pos: [30, 65, 100, 135, 170, 205],
     sprite: [],
     speed: 0.05
 };
 
-function game() {
-    tint(200)
-    image(mainBackgroundImg,0 , 0)
-    noTint();
-    Player.visible = true;
-    if (Game.level_loaded == false ) {
-        initialiseLevel();
-        spawnPlayer(current_stage_json.start_pos[0], current_stage_json.start_pos[1]);
-        spawnCheckPoints();
-        spawnSpikes();
-        spawnPlatforms();
-        setUpBoundaries();
-        Game.level_loaded = true;
-    }
-    boundaryCheck();
-    collisionDetection();
-    atmosphere();
-    movePlayer();
-    updatePlatforms();
-    movePlatforms();
-    updateCamera();
-    drawUI();
-}
-
+// Sets game data to level 1 and starts the game
 function newGame() {
     transitionScene(3, 2000);
     loadLevel(1);
@@ -53,6 +39,7 @@ function newGame() {
     initialiseAtmosphere();
 }
 
+// Initialises the player variables, it's animations and various colliders
 function initialisePlayer() {
     Player = new Sprite();
     Player.img = player_sprite;
@@ -136,6 +123,8 @@ function initialisePlayer() {
     joint_center.visible = false;
 }
 
+// Creates the Tiles group, used to create all the solid blocks that make
+// up the levels
 function initialiseTiles() {
     Tiles = new Group();
     Tiles.w = 16;
@@ -143,6 +132,7 @@ function initialiseTiles() {
     Tiles.collider = 's';
 }
 
+// Creates all the obstacle groups (they should probably be seperate but it's fine)
 function initialiseObstacles() {
     RollingRocks = new Group();
     RollingRocks.img = rolling_rock_sprite;
@@ -154,6 +144,7 @@ function initialiseObstacles() {
     Spikes.collider = 'n'
 }
 
+// Creates the CheckPoints group (sometimes to refered to as flags)
 function initialiseCheckPoints() {
     CheckPoints = new Group();
     CheckPoints.collider = 'n';
@@ -166,17 +157,22 @@ function initialiseCheckPoints() {
     });
 }
 
+// Creates Boundaries group, basically only used for detecting falling deaths
 function initialiseBoundaries() {
     Boundaries = new Group();
     Boundaries.collider = 'n';
     Boundaries.visible = false;
 }
 
+// Creates Platforms group, all the platforms that are one way (you can jump up
+// though them but not down) are part of this group
 function initialisePlatforms() { 
     Platforms = new Group();
     Platforms.collider = 'n';
 }
 
+// Spawns the checkpoints based on the current level JSON data, works for any
+// amount
 function spawnCheckPoints() {
     for (i = 0; i < current_stage_json.objects.flags.length; i++) {
         let checkpoint_ = new CheckPoints.Sprite();
@@ -188,6 +184,7 @@ function spawnCheckPoints() {
     }
 }
 
+// Spawns the current level obstacles, still should probably have seperate functions
 function spawnObstacles() { // improve - this is kinda shit currently like why do I have a seperate function for getting json info???
     for (i = 0; i < current_stage_json.objects.obstacles.length; i++) {
         let jsonData = getObstacle(i)
@@ -201,6 +198,9 @@ function spawnObstacles() { // improve - this is kinda shit currently like why d
     }
 }
 
+// Gets tilemap data from current level JSON data and creates the "blocks". Works
+// well, tilemap can be extended infinitely and it will still load properly (it
+// isn't very nice to read though)
 function spawnTiles() {
     let n = current_stage_json.tilemap[0].length * current_stage_json.tilemap.length
     for (i = 0; i < n; i++) {
@@ -208,8 +208,8 @@ function spawnTiles() {
         if (tile_ != '/') {
             let tile = new Tiles.Sprite()                    
             let pos = getTilePosition(i);
-            tile.x = pos.x
-            tile.y = pos.y //- 376// make this part of the getTilePosition() function
+            tile.x = pos.x;
+            tile.y = pos.y;
             switch (tile_) {
                 case 'p':
                     tile.colour = 0;
@@ -262,6 +262,7 @@ function spawnTiles() {
     }
 }
 
+// Spawns the level boundaries at the start of the level
 function setUpBoundaries() { //might not need top boundary or even sides
     for (i = 0; i < 3; i++) {
         let boundary_ = new Boundaries.Sprite();
@@ -288,6 +289,7 @@ function setUpBoundaries() { //might not need top boundary or even sides
     }
 }
 
+// Moves the boundaries when a new checkpoint is reached
 function updateBoundaries() {
     for (i = 0; i < 3; i++) {
         switch (i) {
@@ -304,6 +306,9 @@ function updateBoundaries() {
     }
 }
 
+// Just gets obstacle data based of an index number (index of the array 
+// in JSON file) and returns it as an array. Old function, not great but 
+// works
 function getObstacle(index) {
     let obstacle_ = [];
     obstacle_[0] = current_stage_json.objects.obstacles[index].type;
@@ -313,6 +318,7 @@ function getObstacle(index) {
     return obstacle_;
 }
 
+// Spawns spike sprites from JSON, also handles orientation
 function spawnSpikes() {
     for (i = 0; i < current_stage_json.objects.spikes.length; i++) {
         let spike_ = new Spikes.Sprite();
@@ -342,6 +348,8 @@ function spawnFruit() {
 
 }
 
+// Spawns the platform sprites, includes the wooden platforms, moving 
+// clouds and the ending outcrop platform
 function spawnPlatforms() {
     for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
         let platform_ = new Platforms.Sprite();
@@ -399,13 +407,15 @@ function spawnPlatforms() {
     }
 }
 
-function drawUI() {
+// Calls the draw function for all sprites and then draws the overlay
+function drawOverlay() {
     camera.on();
     allSprites.draw()
     camera.off();
     image(overlay, 0, 0, 256, 256)
 }
 
+// Sets up the level, pretty self explanatory
 function initialiseLevel() {
     //spawnObstacles();
     spawnTiles();
@@ -413,6 +423,8 @@ function initialiseLevel() {
     Tiles.visible = true;
 }
 
+// Gets the player out from cryostasis and puts it at the input parameter 
+// coordinates
 function spawnPlayer(x, y) {
     Player.x = x;
     Player.y = y;
@@ -420,6 +432,10 @@ function spawnPlayer(x, y) {
     Player.collider = 'd';
 }
 
+// Puts the player in cyrostasis (Because the player cannot actually be
+// removed from the scene it will fall indefinitely and eventually despawn
+// when it reaches 10000 pixels below the camera and this fixes it by making
+// invisible but locked to the screen to prevent actual despawning)
 function despawnPlayer() {
     Player.x = 128;
     Player.y = 128;
@@ -427,6 +443,8 @@ function despawnPlayer() {
     Player.collider = 's';
 }
 
+// Just updates the current_stage_json variable to store the data from
+// the parameter stage json data
 function loadLevel(level) {
     switch(level) {
         case 1:
@@ -439,6 +457,19 @@ function loadLevel(level) {
     Player.respawn = current_stage_json.start_pos
 }
 
+// Handles the cinematic scroll to the next checkpoint area, takes a y 
+// position and a speed (pixels per second), also locks the player
+// from moving while it is happening
+async function moveCamera(position, speed) {
+    Input.movement.locked = true;
+    await camera.moveTo(128, position, speed);
+    updateBoundaries()
+    Input.movement.locked = false;
+}
+
+// Main movement controller, handles movement input and some collision for
+// things such as grabbing walls, seperate functions are used for jumping,
+// dashing, grabbing walls and animations
 function movePlayer() {
     if (player_collider_left.overlapping(Tiles) || player_collider_right.overlapping(Tiles)) {
         Player.touchingWall = true;
@@ -483,14 +514,8 @@ function movePlayer() {
 
 }
 
-async function moveCamera(position, speed) {
-    Input.movement.locked = true;
-    await camera.moveTo(128, position, speed);
-    updateBoundaries()
-    Input.movement.locked = false;
-}
-
-
+// Applies an upward force if the player has not yet reached their maximum
+// consecutive jumps value and also updates that value
 function playerJump() {
     if (Player.touchingWall == true) {
         if (player_collider_left.overlapping(Tiles) && Player.holdingWall == true) {
@@ -509,10 +534,13 @@ function playerJump() {
     }
 } 
 
+// Literally just sets the current jumps value ??
 function setJumps(val) {
     Player.jumps = val;
 }
 
+// Creates the illusion that the player is holding the wall by spawning an
+// invisible platform beneath them
 function grabWall() {
     if (Player.holdingWall == false) {
         grab_platform = new Sprite(player_collider_bottom.x, player_collider_bottom.y + 1, Player.w, 1, 's');
@@ -522,11 +550,15 @@ function grabWall() {
     Player.holdingWall = true;
 }
 
+// Deletes the invisible platform created during grabWall()
 function releaseWall() {
     grab_platform.remove();
     Player.holdingWall = false;
 }
 
+// Gives the player a short burst of x velocity, based on the direction
+// they are facing. Doesn't let them teleport through walls and also
+// starts the timer for when the dash can be used again
 function playerDash() {
     if (Player.dashOnCooldown == false) {
         if (Player.facingDirection == 'right') {
@@ -538,6 +570,8 @@ function playerDash() {
     }
 }
 
+// Counts down the time until the player can dash again, I have no idea
+// why I need the 1ms sleep but it works with it and doesn't without it
 async function dashCooldown() {
     await sleep(1);
     Player.dashOnCooldown = true;
@@ -545,6 +579,9 @@ async function dashCooldown() {
     Player.dashOnCooldown = false;
 }
 
+// Handles all the player animations, uses a range of variables such as
+// Player states, input states and priorities to determine which animation
+// to play
 function animatePlayer() {
     if (Player.facingDirection == 'left') {
         Player.mirror.x = true;
@@ -573,12 +610,14 @@ function animatePlayer() {
     }
 }
 
+// Just checks if the player is out of bounds
 function boundaryCheck() {
     if (player_hit_box.overlaps(Boundaries)) {
         killPlayer();
     }
 }
 
+// Detects player activating flags and dying to spikes
 function collisionDetection() {
     for (i = 0; i < current_stage_json.objects.flags.length; i++) {
         if (player_hit_box.overlaps(CheckPoints[i])) {
@@ -595,6 +634,8 @@ function collisionDetection() {
 
 }
 
+// Moves the clouds in the background and resets them when
+// off screen
 function atmosphere() {
     for (i = 0; i < 6; i++) {
         if (Clouds.x_pos[i] > CANVASWIDTH) {
@@ -605,11 +646,13 @@ function atmosphere() {
     tint(0, 100)
     for (i = 0; i < 6; i++) {
         Clouds.x_pos[i] += Clouds.speed
-        image(clouds[Clouds.sprite[i]], Clouds.x_pos[i], Clouds.y_pos[i], 256, 32)  
+        image(Clouds.sprites[Clouds.sprite[i]], Clouds.x_pos[i], Clouds.y_pos[i], 256, 32)  
     }
     noTint()
 }
 
+// Sets the collider for one way platforms, if player is above
+// it's solid, if below its not solid
 function updatePlatforms() {
     for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
         if (player_collider_bottom.y - player_collider_bottom.h <= Platforms[i].y && Platforms[i].type != "outcrop") {
@@ -620,6 +663,7 @@ function updatePlatforms() {
     }
 }
 
+// Moves the cloud platforms between their range
 function movePlatforms() {
     for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
         if (Platforms[i].type == "cloud") {
@@ -638,12 +682,16 @@ function movePlatforms() {
     }
 }
 
+// Triggers at the completion of a level and begins the transition
+// onto the next
 function levelComplete(level) {
     Game.current_level = level + 1
     //currentLevel++
     console.log("complete")
 }
 
+// Spawns the clouds at random x values and assigns one of 
+// the 5 cloud sprites
 function initialiseAtmosphere() {
     for (i = 0; i < 6; i++) {
         let n = round(random(4))
@@ -656,6 +704,8 @@ function initialiseAtmosphere() {
     }
 }
 
+// Resets the position of the cloud in position [index] of
+// the cloud array
 function resetCloud(index) {
     let n = round(random(100)) - 200;
     let m = round(random(4))
@@ -663,6 +713,7 @@ function resetCloud(index) {
     Clouds.sprite[index] = m
 }
 
+// Returns the character at the parameter value in the tilemap
 function getTile(index) { 
     let pos = getGridPosition(index);
     rowPos = pos.y
@@ -672,24 +723,32 @@ function getTile(index) {
     return tile;
 }
 
+// Returns the row, column / x , y values of the tile at the 
+// index parameter
 function getTilePosition(index) { 
     let pos = getGridPosition(index)
+
     rowPos = (pos.y * 16) - (current_stage_json.tilemap.length * 16) + 296
     colPos = pos.x * 16
 
     return { x: colPos, y : rowPos }
 }
 
+// Returns the grid position (world coordinates) of the tile
+// at the index parameter
 function getGridPosition(index) {
     let colPos, rowPos;
     let rowLength = current_stage_json.tilemap[0].length;
 
     rowPos = floor(index / rowLength)
     colPos = index % rowLength
-    //console.log(rowPos)
+
     return { x: colPos, y: rowPos}
 }
 
+// Activates the index value checkpoint and sets the player's
+// respawn to it, also triggers the camera to move and change
+// it's mode (static, follow)
 function activateCheckpoint(index) {
     CheckPoints[index].activated = true;
     CheckPoints[index].changeAni('active');
@@ -701,28 +760,33 @@ function activateCheckpoint(index) {
     }
 }
 
-
+// Kills and then respawns the player
 function killPlayer() {
     // do some sort of death anim / respawn timer
     // also could do different death types so like falling / spikes should be different
     respawnPlayer();
 }
 
+// Resets the player position to it's respawn coordinates
 function respawnPlayer() {
     Player.x = Player.respawn[0];
     Player.y = Player.respawn[1];
 }
 
+// Updates the camera mode to either stay static or follow the
+// Player's y value
 function changeCamera(type) {
     if (type == 0) {
-        camera_following_player = false;
+        Game.camera_following_player = false;
     } else if (type == 1) {
-        camera_following_player = true;
+        Game.camera_following_player = true;
     }
 }
 
+// If the current camera mode is follow the camera.y value is 
+// set to the Player.y value, floored to make it look smoother
 function updateCamera() {
-    if (camera_following_player == true) {
+    if (Game.camera_following_player == true) {
         if (Player.y < Game.camera_cache) {
             camera.y = floor(Player.y)
         }
