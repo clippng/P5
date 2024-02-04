@@ -3,7 +3,7 @@
 /////////////////////////////////////////////////////////////////////////////////
 
 // Group declaration for menu boxes and a variable to store the player's name
-let MenuOptions, user_name 
+let MenuOptions, user_name;
 
 // Object for current menu data
 const Menu = {
@@ -25,7 +25,7 @@ function initialiseMenu() {
     MenuOptions.scale = 2;
     MenuOptions.textSize = 12;
     MenuOptions.textColor = '#816271';
-    MenuOptions.textStroke = '#000000'
+    MenuOptions.textStroke = '#000000';
 }
 
 // A very large function that loads an input menu, menus are classified by
@@ -41,9 +41,9 @@ function loadMenu(menu) {
                 for (i = 0; i < Menu.options; i++) {
                     let menu_options_ = new MenuOptions.Sprite();
                     if (i % 2 == 0) {
-                        menu_options_.x = 74    
+                        menu_options_.x = 74;  
                     } else {
-                        menu_options_.x = 186
+                        menu_options_.x = 186;
                     } 
                     if (i < 2) {
                         menu_options_.y = 80;
@@ -53,12 +53,12 @@ function loadMenu(menu) {
                         menu_options_.y = 170;
                     }
                 }
-                MenuOptions[0].text = "New Game"
-                MenuOptions[1].text = "Continue"
-                MenuOptions[2].text = "Endless"
-                MenuOptions[3].text = "Leaderboard"
-                MenuOptions[4].text = "Tutorial"
-                MenuOptions[5].text = "Settings"
+                MenuOptions[0].text = "New Game";
+                MenuOptions[1].text = "Continue";
+                MenuOptions[2].text = "Endless";
+                MenuOptions[3].text = "Leaderboard";
+                MenuOptions[4].text = "Tutorial";
+                MenuOptions[5].text = "Settings";
                 break;
             case 1: // Load save
                 Menu.options = 3;
@@ -66,8 +66,8 @@ function loadMenu(menu) {
                 let saves = [];
                 for (i = 0; i < Menu.options; i++) { 
                     let menu_options_ = new MenuOptions.Sprite();
-                    menu_options_.x = 128
-                    menu_options_.y = 80 + (i * 45)
+                    menu_options_.x = 128;
+                    menu_options_.y = 80 + (i * 45);
                 }
                 for (i = 0; i < 3; i++) {
                     if (Game.saves[i].empty == false) {
@@ -86,7 +86,7 @@ function loadMenu(menu) {
                 for (i = 0; i < Menu.options; i++) { 
                     let menu_options_ = new MenuOptions.Sprite();
                     menu_options_.x = 128;
-                    menu_options_.y = 80 + (i * 45)
+                    menu_options_.y = 80 + (i * 45);
                 }         
                 break;
             case 3: // level finished
@@ -102,7 +102,7 @@ function loadMenu(menu) {
                 break;
             case 4: // set name/ new save
                 user_name = createInput("no name");
-                user_name.position(500, 250);
+                user_name.position(700, 250);
                 break;
         }
     }
@@ -119,19 +119,19 @@ function menuSelect(menu) {
             if (Input.menu.left == true && (Menu.selected_menu % 2 == 1)) {
                 Menu.selected_menu--;
             } else if (Input.menu.right == true && (Menu.selected_menu % 2 == 0)) {
-                Menu.selected_menu++
+                Menu.selected_menu++;
             } else if (Input.menu.up == true) {
-                Menu.selected_menu -= 2
+                Menu.selected_menu -= 2;
             } else if (Input.menu.down == true) {
-                Menu.selected_menu += 2
+                Menu.selected_menu += 2;
             }
 
             if (Menu.selected_menu == 6) {
-                Menu.selected_menu = 4
+                Menu.selected_menu = 4;
             } else if (Menu.selected_menu == 7) {
-                Menu.selected_menu = 5
+                Menu.selected_menu = 5;
             } else if ( Menu.selected_menu == -1) {
-                Menu.selected_menu = 1
+                Menu.selected_menu = 1;
             } else if (Menu.selected_menu == -2) {
                 Menu.selected_menu = 0;
             }
@@ -195,7 +195,7 @@ function menuPressed(num) {
             transitionScene(8);
             break;
         case 1:
-            transitionScene(2, 200)
+            transitionScene(2, 200);
             break;
         case 2:
             break;
@@ -204,7 +204,7 @@ function menuPressed(num) {
         case 4:
             break;
         case 5:
-            transitionScene(6, 200)
+            transitionScene(6, 200);
             break;
     }
 

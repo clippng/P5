@@ -5,10 +5,10 @@ the player, spawning levels and other useful functions */
 
 // Player and player related sprite definitions
 let Player, player_collider_bottom, player_collider_left, player_collider_right,
-player_hit_box
+player_hit_box;
 
 // Group definitions
-let Platforms, Boundaries, Tiles, Fruits, CheckPoints, Spikes, Icicles
+let Platforms, Boundaries, Tiles, Fruits, CheckPoints, Spikes, Icicles;
 
 // variables to store JSON data
 let current_stage_json, level_1_json, level_2_json;
@@ -43,7 +43,7 @@ const Game = {
     level_loaded: false,
     camera_cache: 128,
     camera_following_player: false
-}
+};
 
 
 
@@ -77,7 +77,7 @@ function initialisePlayer() {
     Player.collider = 'k';
     Player.rotationLock = true;
     Player.mass = 1000;
-    Player.bounciness = 0.001
+    Player.bounciness = 0.001;
     Player.dashCooldown = 1000;
     Player.dashOnCooldown = false;
     Player.facingDirection = 'right';
@@ -90,12 +90,12 @@ function initialisePlayer() {
     Player.respawn = [];
 
     // Creates custom collider that is slightly smaller than the original
-    Player.removeColliders()
-    Player.addCollider(1, 7, 10, 15)
+    Player.removeColliders();
+    Player.addCollider(1, 7, 10, 15);
 
-    // Animations
-    Player.spriteSheet = 'Sprites/Player/player_sprite_sheet.png'
-    Player.anis.frameDelay = 10
+    // Setup animations
+    Player.spriteSheet = 'Sprites/Player/player_sprite_sheet.png';
+    Player.anis.frameDelay = 10;
     Player.addAnis({
         idle: { width: 32, height: 32, y: 0, frames: 1, frameDelay: 0 },
         run: { width: 32, height: 32, x: 32, y: 0, frames: 5, frameDelay: 0 },
@@ -104,13 +104,13 @@ function initialisePlayer() {
         grab: { width: 32, height: 32, x: 256, y: 0, frames: 1, frameDelay: 0 },
         wall_jump: { width: 32, height: 32, x: 288, y: 0, frames: 1, frameDelay: 0 }
     });
-    Player.changeAni('idle')
+    Player.changeAni('idle');
 
     // Three sprites that act as colliders on the left, right and bottom
     // of the player the hit box sprite is a smaller rectangle and all 
     // are glued to the player
     player_collider_bottom = new Sprite();
-    player_collider_bottom.collider = 'n'
+    player_collider_bottom.collider = 'n';
     player_collider_bottom.w = Player.hw;
     player_collider_bottom.h = 2;
     player_collider_bottom.x = Player.x + 1;
@@ -127,7 +127,7 @@ function initialisePlayer() {
     player_collider_left.visible = false;
     player_collider_left.mass = 0.01;
 
-    player_collider_right = new Sprite()
+    player_collider_right = new Sprite();
     player_collider_right.collider = 'n';
     player_collider_right.w = 2;
     player_collider_right.h = Player.h * 0.8;
@@ -141,7 +141,7 @@ function initialisePlayer() {
     player_hit_box.w = 7;
     player_hit_box.h = 11;
     player_hit_box.x = Player.x + 1;
-    player_hit_box.y = Player.y + 6
+    player_hit_box.y = Player.y + 6;
     player_hit_box.visible = false;
     player_hit_box.mass = 0.01;
 
@@ -181,9 +181,9 @@ function initialiseObstacles() {
     RollingRocks.collider = 's';
 
     Spikes = new Group();
-    Spikes.facing = 'south'
+    Spikes.facing = 'south';
     Spikes.img = dark_spikes;
-    Spikes.collider = 'n'
+    Spikes.collider = 'n';
 
     Icicles = new Group();
     Icicles.collider = 's';
@@ -243,18 +243,18 @@ function spawnCheckPoints() {
 // done seperately
 function spawnObstacles() {
     for (i = 0; i < current_stage_json.objects.obstacles.length; i++) {
-        let jsonData = getObstacle(i)
+        let jsonData = getObstacle(i);
         if (jsonData[0] == "rolling_rock") {
-            let obstacle_ = new RollingRocks.Sprite()
+            let obstacle_ = new RollingRocks.Sprite();
             obstacle_.x = jsonData[1];
             obstacle_.y = jsonData[2];
-            obstacle_.trigger = jsonData[3]
+            obstacle_.trigger = jsonData[3];
             obstacle_.default_x = jsonData[1];
             obstacle_.default_y = jsonData[2];
             obstacle_.cooldown = 2000;
             obstacle_.on_cooldown = false;
             obstacle_.falling = false;
-            obstacle_.shape = 'circle'
+            obstacle_.shape = 'circle';
             obstacle_.visible = true;
         } else if (jsonData[0] == "icicle") {
             let obstacle_ = new Icicles.Sprite();
@@ -282,9 +282,9 @@ function spawnObstacles() {
 // of letters after that so u, d, l, r for up, down, left, right but they work in the 
 // same way, with capitals for filled versions.
 function spawnTiles() {
-    let n = current_stage_json.tilemap[0].length * current_stage_json.tilemap.length
+    let n = current_stage_json.tilemap[0].length * current_stage_json.tilemap.length;
     for (i = 0; i < n; i++) {
-        let tile_ = getTile(i)
+        let tile_ = getTile(i);
         let pos = getTilePosition(i);
         if (tile_ != '/' && tile_ != 'p') {
             let tile = new Tiles.Sprite();
@@ -416,14 +416,14 @@ function spawnSpikes() {
     for (i = 0; i < current_stage_json.objects.spikes.length; i++) {
         let spike_ = new Spikes.Sprite();
         spike_.x = current_stage_json.objects.spikes[i].x;
-        spike_.y = current_stage_json.objects.spikes[i].y
+        spike_.y = current_stage_json.objects.spikes[i].y;
         spike_.visible = true;
-        spike_.facing = current_stage_json.objects.spikes[i].facing
+        spike_.facing = current_stage_json.objects.spikes[i].facing;
         switch (current_stage_json.objects.spikes[i].facing) {
             case "south":
                 break;
             case "north":
-                spike_.img = dark_spikes_bottom
+                spike_.img = dark_spikes_bottom;
                 break;
             case "east":
                 spike_.rotation = 270;
@@ -452,30 +452,30 @@ function spawnFruits() {
 function spawnPlatforms() {
     for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
         let platform_ = new Platforms.Sprite();
-        platform_.collider = 'n'
+        platform_.collider = 'n';
         platform_.x = current_stage_json.objects.platforms[i].x;
         platform_.y = current_stage_json.objects.platforms[i].y;
         platform_.visible = true;
         platform_.removeColliders();
         if (current_stage_json.objects.platforms[i].type == "wooden") {
-            platform_.type = "wooden"
+            platform_.type = "wooden";
             switch (current_stage_json.objects.platforms[i].sprite) {
                 case "left":
                     platform_.img = wooden_platform;
                     platform_.mirror.x = true;
-                    platform_.addCollider(0, 0, 16, 7)
+                    platform_.addCollider(0, 0, 16, 7);
                     break;
                 case "right":
-                    platform_.img = wooden_platform
-                    platform_.addCollider(0, 0, 16, 7)
+                    platform_.img = wooden_platform;
+                    platform_.addCollider(0, 0, 16, 7);
                     break;
                 case "middle":
                     platform_.img = wooden_platform_m;
-                    platform_.addCollider(0, 0, 16, 3)
+                    platform_.addCollider(0, 0, 16, 3);
                     break;
             }
         } else if (current_stage_json.objects.platforms[i].type == "cloud") {
-            platform_.type = "cloud"
+            platform_.type = "cloud";
             switch (current_stage_json.objects.platforms[i].sprite) {
                 case "small":
                     platform_.img = cloud_platform_2;
@@ -510,9 +510,9 @@ function spawnPlatforms() {
 // so that the overlay is drawn above all sprites
 function drawOverlay() {
     camera.on();
-    allSprites.draw()
+    allSprites.draw();
     camera.off();
-    image(overlay, 0, 0, 256, 256)
+    image(overlay, 0, 0, 256, 256);
 }
 
 // Spawns the tiles and makes sure theyre visible
@@ -552,7 +552,7 @@ function loadLevel(level) {
             current_stage_json = level_2_json;
             break;
     }
-    Player.respawn = current_stage_json.start_pos
+    Player.respawn = current_stage_json.start_pos;
 }
 
 // Handles the cinematic scroll to the next checkpoint area, takes a y 
@@ -561,7 +561,7 @@ function loadLevel(level) {
 async function moveCamera(position, speed) {
     Input.movement.locked = true;
     await camera.moveTo(128, position, speed);
-    updateBoundaries()
+    updateBoundaries();
     Input.movement.locked = false;
 }
 
@@ -604,11 +604,11 @@ function movePlayer() {
         }
 
         if (Input.movement.dash == true) {
-            playerDash();``
+            playerDash();
         }    
         animatePlayer();
     } else {
-        Player.changeAni('idle')
+        Player.changeAni('idle');
     }
 
 }
@@ -663,9 +663,9 @@ function releaseWall() {
 function playerDash() {
     if (Player.dashOnCooldown == false) {
         if (Player.facingDirection == 'right') {
-            Player.vel.x = 20
+            Player.vel.x = 20;
         } else if (Player.facingDirection == 'left') {
-            Player.vel.x = -20
+            Player.vel.x = -20;
         }
         dashCooldown();
     }
@@ -691,23 +691,23 @@ function animatePlayer() {
     }
 
     if (Player.jumping == true && (Input.movement.left == true || Input.movement.right == true)) {
-        Player.changeAni('jump')
+        Player.changeAni('jump');
     } else {
-        Player.changeAni('idle')
+        Player.changeAni('idle');
     }
 
     if (Input.movement.left == true && (player_collider_bottom.overlapping(Tiles) || player_collider_bottom.overlapping(Tiles))) {
         Player.changeAni('run');
     } else if (Input.movement.right == true && (player_collider_bottom.overlapping(Tiles) || player_collider_bottom.overlapping(Tiles))) {
-        Player.changeAni('run')
+        Player.changeAni('run');
     } else if (player_collider_bottom.overlapping(Tiles) || player_collider_bottom.overlapping(Tiles)) {
         Player.changeAni('idle')
     }
 
     if (Player.holdingWall == true && Input.movement.jump == true) {
-        Player.changeAni('wall_kick')
+        Player.changeAni('wall_kick');
     } else if (Player.holdingWall == true) {
-        Player.changeAni('grab')
+        Player.changeAni('grab');
     }
 }
 
@@ -753,12 +753,12 @@ function atmosphere() {
         }
     }
 
-    tint(0, 100)
+    tint(0, 100);
     for (i = 0; i < 6; i++) {
-        Clouds.x_pos[i] += Clouds.speed
-        image(Clouds.sprites[Clouds.sprite[i]], Clouds.x_pos[i], Clouds.y_pos[i], 256, 32)  
+        Clouds.x_pos[i] += Clouds.speed;
+        image(Clouds.sprites[Clouds.sprite[i]], Clouds.x_pos[i], Clouds.y_pos[i], 256, 32);
     }
-    noTint()
+    noTint();
 }
 
 // Sets the collider for one way platforms, if player is above
@@ -778,14 +778,14 @@ function movePlatforms() {
     for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
         if (Platforms[i].type == "cloud") {
             if (Platforms[i].moving == "left") {
-                Platforms[i].x -= current_stage_json.objects.platforms[i].speed
+                Platforms[i].x -= current_stage_json.objects.platforms[i].speed;
                 if (Platforms[i].x <= current_stage_json.objects.platforms[i].range.min) {
-                    Platforms[i].moving = "right"
+                    Platforms[i].moving = "right";
                 }
             } else if (Platforms[i].moving == "right") {
-                Platforms[i].x += current_stage_json.objects.platforms[i].speed
+                Platforms[i].x += current_stage_json.objects.platforms[i].speed;
                 if (Platforms[i].x >= current_stage_json.objects.platforms[i].range.max) {
-                    Platforms[i].moving = "left"
+                    Platforms[i].moving = "left";
                 }
             }
         }
@@ -806,13 +806,13 @@ function levelComplete(level) {
 // the 5 cloud sprites
 function initialiseAtmosphere() {
     for (i = 0; i < 6; i++) {
-        let sprite_ = round(random(4))
-        let x_value_ = round(random(256))
+        let sprite_ = round(random(4));
+        let x_value_ = round(random(256));
         if (x_value_ % 2 == 0) {
-            x_value_ = x_value_ * -1
+            x_value_ = x_value_ * -1;
         }
-        Clouds.sprite[i] = sprite_
-        Clouds.x_pos[i] = x_value_
+        Clouds.sprite[i] = sprite_;
+        Clouds.x_pos[i] = x_value_;
     }
 }
 
@@ -820,9 +820,9 @@ function initialiseAtmosphere() {
 // the cloud array
 function resetCloud(index) {
     let x_pos_ = round(random(100)) - 200;
-    let sprite_ = round(random(4))
-    Clouds.x_pos[index] = x_pos_
-    Clouds.sprite[index] = sprite_
+    let sprite_ = round(random(4));
+    Clouds.x_pos[index] = x_pos_;
+    Clouds.sprite[index] = sprite_;
 }
 
 // Returns the character at the parameter value in the tilemap,
@@ -830,9 +830,9 @@ function resetCloud(index) {
 // goes to the right and then up
 function getTile(index) { 
     let pos = getGridPosition(index);
-    rowPos = pos.y
-    colPos = pos.x
-    tile = current_stage_json.tilemap[rowPos].charAt(colPos)
+    rowPos = pos.y;
+    colPos = pos.x;
+    tile = current_stage_json.tilemap[rowPos].charAt(colPos);
 
     return tile;
 }
@@ -844,10 +844,10 @@ function getTile(index) {
 function getTilePosition(index) { 
     let pos = getGridPosition(index)
 
-    rowPos = (pos.y * 16) - (current_stage_json.tilemap.length * 16) + 296
-    colPos = pos.x * 16
+    rowPos = (pos.y * 16) - (current_stage_json.tilemap.length * 16) + 296;
+    colPos = pos.x * 16;
 
-    return { x: colPos, y : rowPos }
+    return { x: colPos, y : rowPos };
 }
 
 // Returns the column / row (x / y) coordinates of the 
@@ -857,10 +857,10 @@ function getGridPosition(index) {
     let colPos, rowPos;
     let rowLength = current_stage_json.tilemap[0].length;
 
-    rowPos = floor(index / rowLength)
-    colPos = index % rowLength
+    rowPos = floor(index / rowLength);
+    colPos = index % rowLength;
 
-    return { x: colPos, y: rowPos}
+    return { x: colPos, y: rowPos};
 }
 
 // Activates the index parameter checkpoint and sets the player's
@@ -869,7 +869,7 @@ function getGridPosition(index) {
 function activateCheckpoint(index) {
     CheckPoints[index].activated = true;
     CheckPoints[index].changeAni('active');
-    Player.respawn = [CheckPoints[i].x, CheckPoints[i].y]
+    Player.respawn = [CheckPoints[i].x, CheckPoints[i].y];
     moveCamera(current_stage_json.objects.flags[index].camera, 1);
     Game.camera_cache = current_stage_json.objects.flags[index].camera;
     if (current_stage_json.objects.flags[index].camera_type == "follow") {
@@ -908,7 +908,7 @@ function changeCamera(type) {
 function updateCamera() {
     if (Game.camera_following_player == true) {
         if (Player.y < Game.camera_cache) {
-            camera.y = floor(Player.y)
+            camera.y = floor(Player.y);
         }
     }
 }
@@ -966,7 +966,7 @@ async function triggerIcicle(index) {
     await sleep(800);
     Icicles[index].img = icicle_sprite_1;
     Icicles[index].addCollider(-4, -1, 3, 9);
-    Icicles[index].collider = 'd'
+    Icicles[index].collider = 'd';
     await sleep(300);
     Icicles[index].falling = false;
     await sleep(Icicles[index].cooldown);

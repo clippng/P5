@@ -22,7 +22,7 @@ const CANVASHEIGHT = 256;
 let player_sprite, player_run_anim, player_grab_anim, player_wall_jump_anim;
 let main_background_img, small_background_img, overlay;
 let flag_anim;
-let slider_idicator, slider_bar
+let slider_idicator, slider_bar;
 let light_spikes, dark_spikes, light_spikes_bottom, dark_spikes_bottom;
 let cloud_platform_1, cloud_platform_2, cloud_platform_3, wooden_platform, wooden_platform_m, outcrop;
 let icicle_sprite_1, icicle_sprite_2, icicle_sprite_3, rolling_rock_sprite;
@@ -62,7 +62,7 @@ const Input = {
 const Settings = {
     music_volume: 100,
     sound_volume: 100
-}
+};
 
 // Object that stores current save data would ideally export
 // to a local file so that data isn't lost on refresh, but I
@@ -81,7 +81,7 @@ const Saves = {
             high_score: 0
         }
     ]
-}
+};
 
 // Loads all the images, sounds, video and JSON data into variables
 function preload() {
@@ -93,7 +93,7 @@ function preload() {
     rolling_rock_sprite = loadImage('Sprites/Obstacles/ball_obstacle.png');
     overlay = loadImage('Sprites/Other/overlay.png');
     dark_spikes = loadImage('Sprites/Obstacles/dark_spikes.png');
-    dark_spikes_bottom = loadImage('Sprites/Obstacles/dark_spike_bottom.png')
+    dark_spikes_bottom = loadImage('Sprites/Obstacles/dark_spike_bottom.png');
     light_spikes = loadImage('Sprites/Obstacles/light_spikes.png');
     big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box.png');
     highlighted_big_menu_box_sprite = loadImage('Sprites/Other/big_menu_box_H.png');
@@ -149,7 +149,7 @@ function preload() {
 // Calls most of the initialisation functions for group definitions and sets up global
 // variables such as gravity as well as starts the music (after mouse press)
 function setup() {
-    new Canvas(CANVASWIDTH, CANVASHEIGHT, 'pixelated')
+    new Canvas(CANVASWIDTH, CANVASHEIGHT, 'pixelated');
 
     allSprites.pixelPerfect = true;
     world.gravity.y = 5;
@@ -167,7 +167,7 @@ function setup() {
     opening_video.hide();
 
     world.gravity.y = 5;
-    music.setVolume(1)
+    music.setVolume(1);
     music.play();
     music.setLoop(true);
 
@@ -176,7 +176,7 @@ function setup() {
 
 // Calls update functions and then the current scene controller
 function draw() {
-    background(0)
+    background(0);
     frameRate(60);
     getKeyPressed();
     sceneHandler();
@@ -186,7 +186,7 @@ function draw() {
     } else if (currentScene == 1) {        // main menu
         mainMenu();
     } else if (currentScene == 2) {        // select save
-        saveSelect()
+        saveSelect();
     } else if (currentScene == 3) {        // game
         game();
     } else if (currentScene == 4) {        // high scores (doesn't exist yet)
@@ -210,8 +210,8 @@ function loadingScreen() {
     allSprites.visible = false;
     image(small_background_img, 64, 64)
     textAlign(CENTER); 
-    textSize(20)
-    fill(255)
+    textSize(20);
+    fill(255);
 
     if (frameCount % 120 <= 30) {
         text("Loading   ", 128, 215);
@@ -223,7 +223,7 @@ function loadingScreen() {
         text("Loading...", 128, 215);
     }
 
-    image(overlay, 64, 64, 128, 128)
+    image(overlay, 64, 64, 128, 128);
     fill('#816271');
     stroke(0);
     textSize(20);
@@ -247,8 +247,8 @@ function mainMenu() {
 // level once and then calls all update functions every frame. Also
 // draws and tints the background image
 function game() {
-    tint(200)
-    image(main_background_img,0 , 0)
+    tint(200);
+    image(main_background_img,0 , 0);
     noTint();
 
     // All functions called once, resets level timer
@@ -278,7 +278,7 @@ function game() {
     updateCamera();
     drawOverlay();
 
-    Game.level_time++
+    Game.level_time++;
 }
 
 // Save select scene controller, saving is only partially realsied,
@@ -290,25 +290,25 @@ function saveSelect() {
     highlightMenu();
 
     if (Input.menu.back == true) {
-        transitionScene(1, 200)
+        transitionScene(1, 200);
     } else if (Input.menu.confirm == true) {
         transitionScene(3, 2000);
     }
 
-    text("Select Save", 128, 40)
+    text("Select Save", 128, 40);
 }
 
 // Settings scene controller, checks for input and adjusts the
 // sliders as necessary. Also handles updating the actual variables
 // that it is changing
 function settings() { 
-    loadMenu(2)
+    loadMenu(2);
     getKeyPressed();
     menuSelect(2);
     highlightMenu();
 
     if (Input.menu.back == true) {
-        transitionScene(1, 200)
+        transitionScene(1, 200);
     }
 
     if (Input.menu.left == true){
@@ -331,19 +331,19 @@ function settings() {
 
     // Draws the text based off current settings variables
     drawOverlay();
-    image(slider_bar, 100, 77, 125, 6)
-    image(slider_bar, 100, 122, 125, 6)
-    image(slider_idicator, 100 + (Settings.music_volume * 1.2), 74, 6, 12)
-    image(slider_idicator, 100 + (Settings.sound_volume * 1.2), 119, 6, 12)
+    image(slider_bar, 100, 77, 125, 6);
+    image(slider_bar, 100, 122, 125, 6);
+    image(slider_idicator, 100 + (Settings.music_volume * 1.2), 74, 6, 12);
+    image(slider_idicator, 100 + (Settings.sound_volume * 1.2), 119, 6, 12);
     textSize(20);
     textAlign(CENTER);
-    text("Settings", 128, 40)
+    text("Settings", 128, 40);
     textSize(12);
-    textAlign(LEFT)
+    textAlign(LEFT);
     let music_ = "Music:" + Settings.music_volume;
     let sound_ = "Sound:" + Settings.sound_volume;
-    text(music_, 30, 85)
-    text(sound_, 30, 130)
+    text(music_, 30, 85);
+    text(sound_, 30, 130);
 }
 
 // Level finished scene controller, calculates and updates score data
@@ -355,8 +355,8 @@ function levelFinished() {
     highlightMenu();
     drawOverlay();
 
-    let msg = Saves.name + " made it to\nthe top of the mountain\n in " + round(Game.level_time / 60) + " seconds!"
-    let score
+    let msg = Saves.name + " made it to\nthe top of the mountain\n in " + round(Game.level_time / 60) + " seconds!";
+    let score;
     if (Game.level_time < 10000) {
         score =  "Score: " + (10000 - Game.level_time);
     } else {
@@ -365,9 +365,9 @@ function levelFinished() {
     if (10000 - Game.level_time > Saves.data[0].high_score) {
         Saves.data[0].high_score = Game.level_time;
     }
-    textSize(20)
+    textSize(20);
     text("Level Complete!", 128, 40);
-    textSize(14)
+    textSize(14);
     text(msg, 128, 80);
     text(score, 128, 150);
 
@@ -403,11 +403,11 @@ function createSave() {
 // Plays the opening video / title card, plays until the player 
 // presses space or enter
 function opening() {
-    image(opening_video, 0, 0, 480, 270)
-    image(title_card, 0, 0)
+    image(opening_video, 0, 0, 480, 270);
+    image(title_card, 0, 0);
 
     if (Input.movement.jump == true || Input.menu.confirm == true) {
-        transitionScene(1, 2000)
+        transitionScene(1, 2000);
     }
 }
 
@@ -415,7 +415,7 @@ function opening() {
 // finished and then changes the current scene to the input scene
 async function transitionScene(scene, time) {
     currentScene = 0;
-    await sleep(time)
+    await sleep(time);
     currentScene = scene;
 }
 
@@ -425,7 +425,7 @@ function getKeyPressed() {
     if (kb.presses('up') || kb.presses('space')) {
         Input.movement.jump = true;
     } else {
-        Input.movement.jump = false
+        Input.movement.jump = false;
     }
 
     if (kb.pressing('right')) {
