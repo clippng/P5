@@ -5,7 +5,7 @@ the player, spawning levels and other useful functions */
 
 
 // Group definitions
-let Platforms, Boundaries, Tiles, CheckPoints, Spikes, Icicles
+let Platforms, Boundaries, Tiles, Fruits, CheckPoints, Spikes, Icicles
 
 // variables to store JSON data
 let current_stage_json, level_1_json, level_2_json;
@@ -186,6 +186,13 @@ function initialisePlatforms() {
     Platforms.collider = 'n';
 }
 
+// Creates the Fruits group, used as bonus objectives in levels
+function initialiseFruits() {
+    Fruits = new Group();
+    Fruits.img = fruit_sprite;
+    Fruits.collider = 'n';
+}
+
 // Spawns the checkpoints based on the current level JSON data, works for any
 // amount
 function spawnCheckPoints() {
@@ -234,8 +241,12 @@ function spawnObstacles() {
 }
 
 // Gets tilemap data from current level JSON data and creates the "blocks". Works
-// well, tilemap can be extended infinitely and it will still load properly (it
-// isn't very nice to read though)
+// well, tilemap can be extended infinitely and it will still load properly.
+// The appearance of each tile is set with characters in the tilemap n, e, s, w are 
+// the cardinal directions and refer to orientation capitals are variations (usually 
+// means rotated 45 degress clockwise so n would be a north east corner), I ran out 
+// of letters after that so u, d, l, r for up, down, left, right but they work in the 
+// same way, with capitals for filled versions.
 function spawnTiles() {
     let n = current_stage_json.tilemap[0].length * current_stage_json.tilemap.length
     for (i = 0; i < n; i++) {
@@ -273,21 +284,29 @@ function spawnTiles() {
                 case 'w':
                     tile.img = grassNW;
                     break;
-                case '$':
-                    tile.remove();
-                    spawnFruit();
+                case 'u':
+                    tile.img = grassNEC;
                     break;
-                case '-':
-                    tile.img = wooden_platform;
-                    tile.debug = true;
+                case 'l':
+                    tile.img = grassSEC;
                     break;
-                case '_':
-                    tile.img = wooden_platform
-                    tile.mirror.x = true;
-                    tile.debug = true;
+                case 'd':
+                    tile.img = grassSWC;
                     break;
-                case '=':
-                    tile.img = wooden_platform_m
+                case 'r':
+                    tile.img = grassNWC;
+                    break;
+                case 'U':
+                    tile.img = grassNECF;
+                    break;
+                case 'L':
+                    tile.img = grassSECF;
+                    break;
+                case 'D':
+                    tile.img = grassSWCF;
+                    break;
+                case 'R':
+                    tile.img = grassNWCF;
                     break;
             }
         } else if (tile_ == 'p') {
@@ -299,7 +318,7 @@ function spawnTiles() {
 }
 
 // Spawns the level boundaries at the start of the level
-function setUpBoundaries() { //might not need top boundary or even sides
+function setUpBoundaries() {
     for (i = 0; i < 3; i++) {
         let boundary_ = new Boundaries.Sprite();
         switch (i) {
@@ -344,6 +363,9 @@ function updateBoundaries() {
 
 // Just gets obstacle data based of an index number (index of the array 
 // in JSON file) and returns it as an array in the format [type, x, y, radius]. 
+// Radius refers to trigger radius and isn't actually a radius just a value
+// that determines when the trap will trigger, works differently for different
+// obstacle types
 function getObstacle(index) {
     let obstacle_ = [];
     obstacle_[0] = current_stage_json.objects.obstacles[index].type;
@@ -379,12 +401,18 @@ function spawnSpikes() {
     }
 }
 
-function spawnFruit() {
-
+// Spawns in the fruits from the JSON data, pretty simple
+function spawnFruits() {
+    for (i = 0; i < current_stage_json.objects.fruits.length; i++) {
+        let fruit_ = new Fruits.Sprite();
+        fruit_.x = current_stage_json.objects.fruits[i].x;
+        fruit_.y = current_stage_json.objects.fruits[i].y;
+        fruit_.visible = true;
+    }
 }
 
 // Spawns the platform sprites, includes the wooden platforms, moving 
-// clouds and the ending outcrop platform
+// clouds and the ending oremoveAll();utcrop platform
 function spawnPlatforms() {
     for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
         let platform_ = new Platforms.Sprite();
@@ -443,6 +471,7 @@ function spawnPlatforms() {
 }
 
 // Calls the draw function for all sprites and then draws the overlay
+// so that the overlay is drawn above all sprites
 function drawOverlay() {
     camera.on();
     allSprites.draw()
@@ -541,7 +570,7 @@ function movePlayer() {
         }
 
         if (Input.movement.dash == true) {
-            playerDash();
+            playerDash();``
         }    
         animatePlayer();
     } else {
@@ -568,6 +597,7 @@ function playerJump() {
         Player.vel.y = -(Player.jumpHeight);
         Player.jumps++;
     }
+    jump_sound.play();
 } 
 
 // Literally just sets the current jumps value ?? Why did I write this ??
@@ -667,8 +697,14 @@ function collisionDetection() {
     if (player_hit_box.overlaps(Spikes) || Player.collides(RollingRocks) ||
         Player.collides(Icicles)) {
         killPlayer();
+        death_sound.play();
     }
-
+    for (i = 0; i < current_stage_json.objects.fruits.length; i++) {
+        if (player_hit_box.overlaps(Fruits)) {
+            Fruits[i].remove();
+            Saves.data[Game.current_level - 1].fruits[i] = true;
+        }
+    }
 }
 
 // Moves the clouds in the background and resets them when
@@ -722,9 +758,9 @@ function movePlatforms() {
 // Triggers at the completion of a level and begins the transition
 // onto the next
 function levelComplete(level) {
-    Game.current_level = level + 1
-    //currentLevel++
-    console.log("complete")
+    Game.game_running = false;
+    Game.level_loaded = false;
+    transitionScene(7, 1000);
 }
 
 // Spawns the clouds at random x values and assigns one of 
@@ -835,7 +871,6 @@ function obstacleDetection() { // fix detection in the negative y positions
     for (i = 0; i < RollingRocks.length; i++) {
         if (abs(Player.y) - abs(RollingRocks[i].y) < RollingRocks[i].radius) {
             triggerRollingRock(i);
-            RollingRocks[i].debug = true
         }
         if (RollingRocks[i].collides(WallTiles) || RollingRocks[i].collides(Player) || 
             RollingRocks[i].collides(Spikes)) {

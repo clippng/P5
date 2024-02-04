@@ -1,8 +1,7 @@
 {
   "start_pos": [30, 200],
   "theme": "grass",
-  "objects": 
-  {
+  "objects": {
     "flags": [
       {
         "x": 185,
@@ -23,10 +22,18 @@
         "camera_type": "locked"
       }
     ],
-    "fruit": [
+    "fruits": [
       {
-      "x": 0,
-      "y": 0        
+      "x": 30,
+      "y": -122        
+      },
+      {
+        "x": 30,
+        "y": -122        
+      },
+      {
+        "x": 30,
+        "y": -122        
       }
     ],
     "platforms": [
@@ -44,9 +51,21 @@
       },
       {
         "x": 128,
-        "y": 88,
+        "y": 83,
         "type": "wooden",
-        "sprite": "middle"
+        "sprite": "left"
+      },
+      {
+        "x": 16,
+        "y": -141,
+        "type": "wooden",
+        "sprite": "left"
+      },
+      {
+        "x": 32,
+        "y": -141,
+        "type": "wooden",
+        "sprite": "right"
       },
       {
         "x": 128,
@@ -199,29 +218,33 @@
       }
     ]
   },
-  "columns": 17,
-  "rows": 18,
   "tilemap": [
-      "p//////////////Cp",
-      "p///////////CCC/p",
-      "p/////////CC////p",
-      "p///////CC//////p",
-      "p//////C////////p",
-      "p/////C/////////p",
-      "p////C//////////p",
-      "p////C//////////p",
-      "pCCCN///////////p",
-      "pCCCN///////////p",
-      "pCCN////////////p",
-      "pCN/////////////p",
-      "pCN/////////////p",
-      "pCN/////////////p",
-      "pN//////////////p",
-      "pN//////////////p",
-      "pNN/////////////p",
+      "pCCCCCCCCCCCCCCCp",
+      "pCCCCCCCCCCCCCCCp",
+      "pCCCCCCCCCCCCCCCp",
+      "pCCCCCCCCCCCCCCCp",
+      "pCCCCCCCCCCCCCCCp",
+      "pCCCCCCCCCCCCCCCp",
+      "pCCCCCCCCCCCCCCCp",
+      "pCCCCCCCCCCLSSSSp",
+      "pCCCCCCCCLSe////p",
+      "pCCCCCCLSe//////p",
+      "pCCCCCLe////////p",
+      "pCCCCLe/////////p",
+      "pCCCCE//////////p",
+      "pCCCLe//////////p",
+      "pCCCE///////////p",
+      "pCCLe///////////p",
+      "pCLe////////////p",
+      "pCE/////////////p",
+      "pCE/////////////p",
+      "pLe/////////////p",
+      "pE//////////////p",
+      "pE//////////////p",
+      "pUn/////////////p",
       "p/////N/////////p",
       "p///////////w//np",
-      "p//N////////W$/Ep",
+      "p//N////////W//Ep",
       "p/////////N/W//Ep",
       "p///////////W//Ep",
       "p////N//////W//Ep",
@@ -229,28 +252,28 @@
       "p//////N////s//ep",
       "p///////////////p",
       "p///////////////p",
-      "pNNNNNNNNNNNN///p",
+      "pNNNNNNNNNNNn///p",
       "p///////////////p",
       "p///////////////p",
-      "p//N/////N////NNp",
-      "p$/N////////////p",
-      "p//N////////////p",
-      "p//NNNN//N//////p",
+      "p//n/////N////NNp",
+      "p//E////////////p",
+      "p//E////////////p",
+      "p//UNNN//N//////p",
       "p///////////////p",
       "p///////////////p",
-      "p//N///NNN///NNNp",
-      "p//N////////////p",
+      "p//N///wNn///wNNp",
+      "p//S////////////p",
       "p///////////////p",
       "p///////////////p",
-      "pNNN//N/////////p",
+      "pNNn//N/////////p",
       "p////////N//////p",
-      "p//////////NNNNNp",
+      "p//////////wNNNNp",
       "p//Nn/////////sSp",
-      "p////NNN////////p",
+      "p///uNNN////////p",
       "p///////////////p",
       "pNn////////////wp",
       "CCCNNn///wNNn//Wp",
-      "CCSSe//////////Wp",
+      "CLSSe//////////Wp",
       "Se/////////////Wp",
       "///////////////Wp",
       "///////////wn//Wp",

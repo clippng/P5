@@ -11,23 +11,25 @@ const CANVASHEIGHT = 256;
 // fix clouds spawning on screen
 // Idea to count save stats so like count jumps / deaths etc -- would satisfy the leaderboard requirement i think ?
 // try to find a way to make the text clearer (stroke ?)
-// falling icicles, fruit, rolling rocks -- have to load anim for icicle
 // fix sprite rotations bugging out
 // make loading screens actually functional
 // fix lag /memory leaks -- the longer the program is running the worse the fps is
+// remove rocks when spawn is on screen
 
-// All the varibles used to store images/ sprites (techniquely still just images)
+// All the varibles used to store images
 let Player, player_collider_bottom, player_collider_left, player_collider_right,
 player_hit_box, player_sprite, player_run_anim, player_grab_anim, player_wall_jump_anim;
-let mainBackgroundImg, smallBackgroundImg, overlay;
+let main_background_img, small_background_img, overlay;
 let flag_anim;
 let slider_idicator, slider_bar
 let light_spikes, dark_spikes, light_spikes_bottom, dark_spikes_bottom;
 let cloud_platform_1, cloud_platform_2, cloud_platform_3, wooden_platform, wooden_platform_m, outcrop;
 let icicle_sprite_1, icicle_sprite_2, icicle_sprite_3, rolling_rock_sprite;
-let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC;
-let menuOptions, menu_box_sprite, highlighted_menu_box_sprite, big_menu_box_sprite, highlighted_big_menu_box_sprite;
-
+let grassN, grassE, grassS, grassW, grassC, grassNE, grassSE, grassSW, grassNW, grassM, grassNEC, grassSEC, grassSWC, grassNWC,
+grassNECF, grassSECF, grassSWCF, grassNWCF;
+let menu_options, menu_box_sprite, highlighted_menu_box_sprite, big_menu_box_sprite, highlighted_big_menu_box_sprite;
+let fruit_sprite;
+let jump_sound, death_sound, music;
 
 // Cache used to check if scene has changed recently
 let scene_cache;
@@ -60,10 +62,29 @@ const Settings = {
     sound_volume: 100
 }
 
+// Object that stores current save data would ideally export
+// to a local file so that saved isn't lost on refresh, but I
+// don't know how to do that yet
+const Saves = {
+    name: " ",
+    data: [
+        {
+            complete: false,
+            fruits: [false, false, false],
+            high_score: 0
+        },
+        {
+            complete: false,
+            fruits: [false, false, false],
+            high_score: 0
+        }
+    ]
+}
+
 // Loads all the images and JSON data into variables
 function preload() {
-    mainBackgroundImg = loadImage('Sprites/Other/mountain_background_big.png');
-    smallBackgroundImg = loadImage('Sprites/Other/mountain_background.png');
+    main_background_img = loadImage('Sprites/Other/mountain_background_big.png');
+    small_background_img = loadImage('Sprites/Other/mountain_background.png');
     player_sprite = loadImage('Sprites/Player/player.png');
     menu_box_sprite = loadImage('Sprites/Other/menu_box.png');
     highlighted_menu_box_sprite = loadImage('Sprites/Other/menuBox_H.png');
@@ -85,6 +106,7 @@ function preload() {
     icicle_sprite_1 = loadImage('Sprites/Obstacles/icicle_1.png');
     icicle_sprite_2 = loadImage('Sprites/Obstacles/icicle_2.png');
     icicle_sprite_3 = loadImage('Sprites/Obstacles/icicle_3.png');
+    fruit_sprite = loadImage('Sprites/Other/fruit.png');
 
     Clouds.sprites[0] = loadImage('Sprites/Clouds/cloud_1.png');
     Clouds.sprites[1] = loadImage('Sprites/Clouds/cloud_2.png');
@@ -106,13 +128,21 @@ function preload() {
     grassSEC = loadImage('Sprites/Terrain/Grass/grass_SEC.png');
     grassSWC = loadImage('Sprites/Terrain/Grass/grass_SWC.png');
     grassNWC = loadImage('Sprites/Terrain/Grass/grass_NWC.png');
+    grassNECF = loadImage('Sprites/Terrain/Grass/grass_NECF.png');
+    grassSECF = loadImage('Sprites/Terrain/Grass/grass_SECF.png');
+    grassSWCF = loadImage('Sprites/Terrain/Grass/grass_NWCF.png');
+    grassNWCF = loadImage('Sprites/Terrain/Grass/grass_NWCF.png');
+
+    jump_sound = loadSound('Sounds/jump_sound.mp3');
+    death_sound = loadSound('Sounds/death_sound.mp3');
+    music = loadSound('Sounds/music.mp3');
 
     level_1_json = loadJSON('Code/level_1.json');
     level_2_json = loadJSON('Code/level_2.json');
 }
 
 // Calls most of the initialisation functions for group definitions and sets up global
-// variables such as gravity
+// variables such as gravity as well as starts the music (after mouse press)
 function setup() {
     new Canvas(CANVASWIDTH, CANVASHEIGHT, 'pixelated')
 
@@ -122,10 +152,15 @@ function setup() {
     initialiseObstacles();
     initialiseTiles();
     initialiseCheckPoints();
+    initialiseFruits();
     initialiseBoundaries();
     initialisePlatforms();
 
-    world.gravity.y = 5
+    getAudioContext().suspend();
+    world.gravity.y = 5;
+    music.setVolume(1)
+    music.play();
+    music.setLoop(true);
 
     transitionScene(1, 2000);
 }
@@ -151,6 +186,8 @@ function draw() {
 
     } else if (currentScene == 6) {        // settings
         settings();
+    } else if (currentScene == 7) {        // post level
+        levelFinished();
     }
 }
 
@@ -158,7 +195,7 @@ function draw() {
 function loadingScreen() {
     allSprites.visible = false;
     textAlign(CENTER); 
-    image(smallBackgroundImg, 64, 64)
+    image(small_background_img, 64, 64)
     textSize(20)
     fill(255)
     if (frameCount % 120 <= 30) {
@@ -191,7 +228,7 @@ function mainMenu() {
 // Game controller
 function game() {
     tint(200)
-    image(mainBackgroundImg,0 , 0)
+    image(main_background_img,0 , 0)
     noTint();
     Player.visible = true;
     if (Game.level_loaded == false ) {
@@ -201,6 +238,7 @@ function game() {
         spawnSpikes();
         spawnObstacles();
         spawnPlatforms();
+        spawnFruits();
         setUpBoundaries();
         Game.level_loaded = true;
     }
@@ -228,7 +266,7 @@ function saveSelect() {
 }
 
 // Settings scene controller
-function settings() { // maybe move into seperate functions try to reuse menu logic as much as possible 
+function settings() { 
     loadMenu(2)
     getKeyPressed();
     menuSelect(2);
@@ -249,6 +287,9 @@ function settings() { // maybe move into seperate functions try to reuse menu lo
             Settings.sound_volume += 10;
         }
     }
+    music.setVolume(Settings.music_volume/ 100);
+    death_sound.setVolume(Settings.sound_volume / 100);
+    jump_sound.setVolume(Settings.sound_volume / 100);
     drawOverlay();
     image(slider_bar, 100, 77, 125, 6)
     image(slider_bar, 100, 122, 125, 6)
@@ -261,6 +302,27 @@ function settings() { // maybe move into seperate functions try to reuse menu lo
     let sound_ = "Sound:" + Settings.sound_volume;
     text(music_, 30, 85)
     text(sound_, 30, 130)
+}
+
+// Level finished scene controller
+function levelFinished() {
+    loadMenu(3);
+    menuSelect(3);
+    highlightMenu();
+    drawOverlay();
+
+    text("Level Complete!", 128, 40);
+
+    if (Input.menu.confirm == true && Menu.selected_menu == 0) {
+        transitionScene(1, 400);
+    }     if (Input.menu.confirm == true && Menu.selected_menu == 1) {
+        transitionScene(3, 2000);
+        loadLevel(2);
+        Game.game_running = true;
+        Game.current_level = 1;
+        initialiseAtmosphere();
+        allSprites.visible = true;
+    }
 }
 
 // Takes a scene to transition to and a timer, displays loading scene until timer is 
@@ -361,24 +423,43 @@ function sceneDeconstructor(scene) {
         case 0:
             break;
         case 1:
-            menuOptions.removeAll();
+            menu_options.removeAll();
             Menu.loaded = false;
             break;
         case 2:
-            menuOptions.removeAll();
+            menu_options.removeAll();
             Menu.loaded = false;
             break;
         case 3:
             despawnPlayer();
+            Platforms.removeAll();
+            Boundaries.removeAll();
+            Tiles.removeAll();
+            Fruits.removeAll();
+            CheckPoints.removeAll();
+            Spikes.removeAll();
+            Icicles.removeAll();
+            camera.x = 128;
+            camera.y = 128;
             break;
         case 4:
             break;
         case 5:
             break;
         case 6:
-            menuOptions.removeAll();
+            menu_options.removeAll();
+            Menu.loaded = false;
+            break;
+        case 7:
+            menu_options.removeAll();
             Menu.loaded = false;
             break;
     }
 }
 
+// This is to prevent some browser specific error where sound can't 
+// be played without the user explicitly allowing it (in this case it's
+// just pressing the mouse), but yeah why wasn't this in the lecture notes?
+function mousePressed() {
+    userStartAudio();
+}

@@ -13,14 +13,14 @@ const Menu = {
 // Creates the menuOptions group which is basically just the rectangles used in
 // all the menus
 function initialiseMenu() {
-    menuOptions = new Group();
-    menuOptions.collider = 'n';
-    menuOptions.img = menu_box_sprite;
-    menuOptions.visible = false;
-    menuOptions.scale = 2;
-    menuOptions.textSize = 12;
-    menuOptions.textColor = '#816271';
-    menuOptions.textStroke = '#000000'
+    menu_options = new Group();
+    menu_options.collider = 'n';
+    menu_options.img = menu_box_sprite;
+    menu_options.visible = false;
+    menu_options.scale = 2;
+    menu_options.textSize = 12;
+    menu_options.textColor = '#816271';
+    menu_options.textStroke = '#000000'
 }
 
 // A very large function that loads an input menu, menus are classified by
@@ -34,51 +34,60 @@ function loadMenu(menu) {
                 Menu.options = 6;
                 Menu.box_size = 0;
                 for (i = 0; i < Menu.options; i++) {
-                    let menuOptions_ = new menuOptions.Sprite();
+                    let menu_options_ = new menu_options.Sprite();
                     if (i % 2 == 0) {
-                        menuOptions_.x = 74    
+                        menu_options_.x = 74    
                     } else {
-                        menuOptions_.x = 186
+                        menu_options_.x = 186
                     } 
                     if (i < 2) {
-                        menuOptions_.y = 80;
+                        menu_options_.y = 80;
                     } else if (i < 4) {
-                        menuOptions_.y = 125;
+                        menu_options_.y = 125;
                     } else {
-                        menuOptions_.y = 170;
+                        menu_options_.y = 170;
                     }
                 }
-                menuOptions[0].text = "New Game"
-                menuOptions[1].text = "Continue"
-                menuOptions[2].text = "Endless"
-                menuOptions[3].text = "Leaderboard"
-                menuOptions[4].text = "Tutorial"
-                menuOptions[5].text = "Settings"
-                Menu.loaded = true;
+                menu_options[0].text = "New Game"
+                menu_options[1].text = "Continue"
+                menu_options[2].text = "Endless"
+                menu_options[3].text = "Leaderboard"
+                menu_options[4].text = "Tutorial"
+                menu_options[5].text = "Settings"
                 break;
             case 1: // Load save
                 Menu.options = 3;
                 Menu.box_size = 1;
-                for (i = 0; i < Menu.options; i++) { // make bigger sprites (108px wide)
-                    let menuOptions_ = new menuOptions.Sprite();
-                    menuOptions_.x = 128
-                    menuOptions_.y = 80 + (i * 45)
+                for (i = 0; i < Menu.options; i++) { 
+                    let menu_options_ = new menu_options.Sprite();
+                    menu_options_.x = 128
+                    menu_options_.y = 80 + (i * 45)
                 }
-                Menu.loaded = true;
                 break;
             case 2: // settings
                 Menu.options = 4;
                 Menu.box_size = 1;
-                for (i = 0; i < Menu.options; i++) { // also want bigger sprites here
-                    let menuOptions_ = new menuOptions.Sprite();
-                    menuOptions_.x = 128;
-                    menuOptions_.y = 80 + (i * 45)
+                for (i = 0; i < Menu.options; i++) { 
+                    let menu_options_ = new menu_options.Sprite();
+                    menu_options_.x = 128;
+                    menu_options_.y = 80 + (i * 45)
                 }         
-                Menu.loaded = true;
+                break;
+            case 3: // level finished
+                Menu.options = 2;
+                Menu.box_size = 0;
+                for (i = 0; i < Menu.options; i++) {
+                    let menu_options_ = new menu_options.Sprite();
+                    menu_options_.y = 200;
+                    menu_options_.x = 74 + (i * 112);
+                }
+                menu_options[0].text = "Main Menu";
+                menu_options[1].text = "Continue";
                 break;
         }
     }
-    menuOptions.visible = true;
+    Menu.loaded = true;
+    menu_options.visible = true;
 }
 
 // Changes the currently selected menuOptions sprite, they're all setup so that
@@ -125,6 +134,12 @@ function menuSelect(menu) {
                 Menu.selected_menu--;
             }
             break;
+        case 3:
+            if (Input.menu.right == true && Menu.selected_menu != Menu.options - 1) {
+                Menu.selected_menu++;
+            } else if (Input.menu.left == true && Menu.selected_menu != 0) {
+                Menu.selected_menu--;
+            }
     }
 }
 
@@ -134,19 +149,19 @@ function highlightMenu() {
     for (i = 0; i < Menu.options; i++) {
         if (Menu.box_size == 0) {
             if (i == Menu.selected_menu) {
-                menuOptions[i].img = highlighted_menu_box_sprite;
-                menuOptions[i].textColor = '#f6d6db';
+                menu_options[i].img = highlighted_menu_box_sprite;
+                menu_options[i].textColor = '#f6d6db';
             } else {
-                menuOptions[i].img = menu_box_sprite;
-                menuOptions[i].textColor = '#816271';
+                menu_options[i].img = menu_box_sprite;
+                menu_options[i].textColor = '#816271';
             }            
         } else if (Menu.box_size == 1) {
             if (i == Menu.selected_menu) {
-                menuOptions[i].img = highlighted_big_menu_box_sprite;
-                menuOptions[i].textColor = '#f6d6db';
+                menu_options[i].img = highlighted_big_menu_box_sprite;
+                menu_options[i].textColor = '#f6d6db';
             } else {
-                menuOptions[i].img = big_menu_box_sprite;
-                menuOptions[i].textColor = '#816271';
+                menu_options[i].img = big_menu_box_sprite;
+                menu_options[i].textColor = '#816271';
             }      
         }
     }
@@ -167,6 +182,7 @@ function menuPressed(num) {
         case 3:
             break;
         case 4:
+            //transitionScene(7, 200)
             break;
         case 5:
             transitionScene(6, 200)
