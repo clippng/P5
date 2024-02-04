@@ -16,12 +16,33 @@ let grab_platform;
 // Object to store game related data, camera cache is used for moving the camera
 // between checkpoints
 const Game = {
+    saves: [
+        {
+            empty: true,
+            name: "No Name",
+            current_level: 1,
+        },
+        {
+            empty: true,
+            name: "No Name",
+            current_level: 1,
+        },
+        {
+            empty: true,
+            name: "No Name",
+            current_level: 1,
+        }
+    ],
+    name: "No Name",
     game_running: false,
     current_level: 1,
+    level_time: 0,
     level_loaded: false,
     camera_cache: 128,
     camera_following_player: false
 }
+
+
 
 // Object to store highly unnesscary cloud data (not the platform clouds the barely
 // visible ones in the background)
@@ -206,7 +227,7 @@ function spawnCheckPoints() {
     }
 }
 
-// Spawns the current level obstacles, still should probably have seperate functions
+// Spawns the current level obstacles, currently just rocks and icicles
 function spawnObstacles() {
     for (i = 0; i < current_stage_json.objects.obstacles.length; i++) {
         let jsonData = getObstacle(i)
@@ -479,11 +500,9 @@ function drawOverlay() {
     image(overlay, 0, 0, 256, 256)
 }
 
-// Sets up the level, pretty self explanatory
+// Spawns the tiles and makes sure theyre visible
 function initialiseLevel() {
-    //spawnObstacles();
     spawnTiles();
-    //RollingRocks.visible = true;
     Tiles.visible = true;
 }
 
@@ -700,8 +719,8 @@ function collisionDetection() {
         death_sound.play();
     }
     for (i = 0; i < current_stage_json.objects.fruits.length; i++) {
-        if (player_hit_box.overlaps(Fruits)) {
-            Fruits[i].remove();
+        if (player_hit_box.overlaps(Fruits[i])) {
+            Fruits[i].visible = false;
             Saves.data[Game.current_level - 1].fruits[i] = true;
         }
     }
@@ -758,6 +777,8 @@ function movePlatforms() {
 // Triggers at the completion of a level and begins the transition
 // onto the next
 function levelComplete(level) {
+    Game.current_level = level + 1;
+    Game.saves[0].current_level = level + 1;
     Game.game_running = false;
     Game.level_loaded = false;
     transitionScene(7, 1000);
@@ -869,14 +890,17 @@ function updateCamera() {
 
 function obstacleDetection() { // fix detection in the negative y positions
     for (i = 0; i < RollingRocks.length; i++) {
-        if (abs(Player.y) - abs(RollingRocks[i].y) < RollingRocks[i].radius) {
+        if (Player.y - RollingRocks[i].y > RollingRocks[i].radius) {
             triggerRollingRock(i);
         }
         if (RollingRocks[i].collides(WallTiles) || RollingRocks[i].collides(Player) || 
-            RollingRocks[i].collides(Spikes)) {
+            RollingRocks[i].overlaps(Spikes)) {
             RollingRocks[i].x = RollingRocks[i].default_x;
             RollingRocks[i].y = RollingRocks[i].default_y;
             RollingRocks[i].collider = 's';
+            if (Player.y < RollingRocks[i].y) {
+                RollingRocks[i].remove();
+            }
         }
     }
     for (i = 0; i < Icicles.length; i++) {

@@ -2,6 +2,9 @@
 /* All the menu related functions, groups and data.*/
 /////////////////////////////////////////////////////////////////////////////////
 
+let menu_options
+let user_name 
+
 // Object for current menu data
 const Menu = {
     options: 0,
@@ -58,11 +61,22 @@ function loadMenu(menu) {
             case 1: // Load save
                 Menu.options = 3;
                 Menu.box_size = 1;
+                let saves = [];
                 for (i = 0; i < Menu.options; i++) { 
                     let menu_options_ = new menu_options.Sprite();
                     menu_options_.x = 128
                     menu_options_.y = 80 + (i * 45)
                 }
+                for (i = 0; i < 3; i++) {
+                    if (Game.saves[i].empty == false) {
+                        saves[i] = Game.saves[i].name + ": Level " + Game.saves[i].current_level;
+                    } else {
+                        saves[i] = "Empty";
+                    }
+                }
+                menu_options[0].text = saves[0];
+                menu_options[1].text = saves[1];
+                menu_options[2].text = saves[2];
                 break;
             case 2: // settings
                 Menu.options = 4;
@@ -83,6 +97,10 @@ function loadMenu(menu) {
                 }
                 menu_options[0].text = "Main Menu";
                 menu_options[1].text = "Continue";
+                break;
+            case 4: // set name
+                user_name = createInput("no name");
+                user_name.position(500, 250);
                 break;
         }
     }
@@ -168,11 +186,11 @@ function highlightMenu() {
 }
 
 // Only used by the main menu, just does whatever the button says, mostly just
-// changing to another menu
+// changing to another menu, only some are implemented currently
 function menuPressed(num) {
     switch (num) {
         case 0:
-            newGame();
+            transitionScene(8);
             break;
         case 1:
             transitionScene(2, 200)
@@ -182,7 +200,6 @@ function menuPressed(num) {
         case 3:
             break;
         case 4:
-            //transitionScene(7, 200)
             break;
         case 5:
             transitionScene(6, 200)
