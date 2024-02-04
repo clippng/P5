@@ -13,22 +13,13 @@
    image definitions, input data, settings and manages scenes*/
 /////////////////////////////////////////////////////////////////////////////////
 
+// Canvas variables
 const CANVASWIDTH = 256;
 const CANVASHEIGHT = 256;
 
-// make each object have a cooldown for grab / wall kick and remove grabbing side boundaries
-// make in game overlay and pause menu
-// fix clouds spawning on screen
-// Idea to count save stats so like count jumps / deaths etc -- would satisfy the leaderboard requirement i think ?
-// try to find a way to make the text clearer (stroke ?)
-// fix sprite rotations bugging out
-// make loading screens actually functional
-// fix lag /memory leaks -- the longer the program is running the worse the fps is
-// remove rocks when spawn is on screen
 
-// All the varibles used to store images
-let Player, player_collider_bottom, player_collider_left, player_collider_right,
-player_hit_box, player_sprite, player_run_anim, player_grab_anim, player_wall_jump_anim;
+// All the varibles used to store images, video and sound
+let player_sprite, player_run_anim, player_grab_anim, player_wall_jump_anim;
 let main_background_img, small_background_img, overlay;
 let flag_anim;
 let slider_idicator, slider_bar
@@ -92,7 +83,7 @@ const Saves = {
     ]
 }
 
-// Loads all the images and JSON data into variables
+// Loads all the images, sounds, video and JSON data into variables
 function preload() {
     main_background_img = loadImage('Sprites/Other/mountain_background_big.png');
     small_background_img = loadImage('Sprites/Other/mountain_background.png');
@@ -189,14 +180,8 @@ function draw() {
     frameRate(60);
     getKeyPressed();
     sceneHandler();
-    if (kb.presses('k')){ // REMOVE 
-        levelComplete(1);
-    }
 
-
-
-
-    if (currentScene == 0) {                // loading screen
+    if (currentScene == 0) {               // loading screen
         loadingScreen();
     } else if (currentScene == 1) {        // main menu
         mainMenu();
@@ -204,9 +189,9 @@ function draw() {
         saveSelect()
     } else if (currentScene == 3) {        // game
         game();
-    } else if (currentScene == 4) {        // high scores
+    } else if (currentScene == 4) {        // high scores (doesn't exist yet)
 
-    } else if (currentScene == 5) {        // how to play
+    } else if (currentScene == 5) {        // how to play (doesn't exist yet)
 
     } else if (currentScene == 6) {        // settings
         settings();
@@ -219,7 +204,8 @@ function draw() {
     }
 }
 
-// Draws the loading screen
+// Draws the loading screen, changes the text settings 
+// back because it's the only scene that uses white text
 function loadingScreen() {
     allSprites.visible = false;
     image(small_background_img, 64, 64)
@@ -243,7 +229,9 @@ function loadingScreen() {
     textSize(20);
 }
 
-// Main menu scene controller
+// Main menu scene controller, all the logic is in the 
+// functions but basically just lets the player select 
+// one of six options
 function mainMenu() {
     allSprites.visible = false;
 
@@ -256,13 +244,12 @@ function mainMenu() {
 }
 
 // Game controller, calls all the initialisation functions for the
-// level once and then calls all update functions every frame
+// level once and then calls all update functions every frame. Also
+// draws and tints the background image
 function game() {
     tint(200)
     image(main_background_img,0 , 0)
     noTint();
-    allSprites.visbile = true;
-    Player.visible = true;
 
     // All functions called once, resets level timer
     if (Game.level_loaded == false ) {
@@ -276,10 +263,11 @@ function game() {
         setUpBoundaries();
         Game.level_time = 0;
         Game.level_loaded = true;
+        Player.visible = true;
     }
 
     // Calls update functions and increases timer (should be 60 times
-    // per second)
+    // per second if not lagging)
     boundaryCheck();
     collisionDetection();
     atmosphere();
@@ -293,7 +281,8 @@ function game() {
     Game.level_time++
 }
 
-// Save select scene controller
+// Save select scene controller, saving is only partially realsied,
+// works with the first slot though
 function saveSelect() {
     loadMenu(1);
     getKeyPressed();
@@ -310,7 +299,8 @@ function saveSelect() {
 }
 
 // Settings scene controller, checks for input and adjusts the
-// sliders as necessary
+// sliders as necessary. Also handles updating the actual variables
+// that it is changing
 function settings() { 
     loadMenu(2)
     getKeyPressed();
@@ -395,7 +385,9 @@ function levelFinished() {
     }
 }
 
-// Sets the name of the save file
+// Sets the name of the save file, only shown after selecting "new
+// game" from the main menu and after the player confirms a new game
+// is started
 function createSave() {
     loadMenu(4);
     drawOverlay();
@@ -408,6 +400,8 @@ function createSave() {
     }
 }
 
+// Plays the opening video / title card, plays until the player 
+// presses space or enter
 function opening() {
     image(opening_video, 0, 0, 480, 270)
     image(title_card, 0, 0)
@@ -508,18 +502,18 @@ function sceneHandler() {
     scene_cache = currentScene;
 }
 
-// Used to remove all elements and resest a scene, some are made invisible and stored such as the player
-// and others are permanenetly destroyed, such as menuOptions sprites
+// Used to remove all elements and reset a scene, some are made invisible and stored such as 
+// the player and others are permanenetly destroyed, such as menuOptions sprites
 function sceneDeconstructor(scene) {
     switch (scene) {
         case 0:
             break;
         case 1:
-            menu_options.removeAll();
+            MenuOptions.removeAll();
             Menu.loaded = false;
             break;
         case 2:
-            menu_options.removeAll();
+            MenuOptions.removeAll();
             Menu.loaded = false;
             break;
         case 3:
@@ -539,11 +533,11 @@ function sceneDeconstructor(scene) {
         case 5:
             break;
         case 6:
-            menu_options.removeAll();
+            MenuOptions.removeAll();
             Menu.loaded = false;
             break;
         case 7:
-            menu_options.removeAll();
+            MenuOptions.removeAll();
             Menu.loaded = false;
             break;
         case 8:
@@ -556,6 +550,8 @@ function sceneDeconstructor(scene) {
 // This is to prevent some browser specific error where sound can't 
 // be played without the user explicitly allowing it (in this case it's
 // just pressing the mouse), but yeah why wasn't this in the lecture notes?
+// Also happens with videos, it won't play unless you enable it in your 
+// browser's settings
 function mousePressed() {
     userStartAudio();
 }

@@ -3,6 +3,9 @@
 the player, spawning levels and other useful functions */
 /////////////////////////////////////////////////////////////////////////////////
 
+// Player and player related sprite definitions
+let Player, player_collider_bottom, player_collider_left, player_collider_right,
+player_hit_box
 
 // Group definitions
 let Platforms, Boundaries, Tiles, Fruits, CheckPoints, Spikes, Icicles
@@ -44,8 +47,8 @@ const Game = {
 
 
 
-// Object to store highly unnesscary cloud data (not the platform clouds the barely
-// visible ones in the background)
+// Object to store cloud data (not the platform clouds the background
+// ones)
 const Clouds = {
     sprites: [],
     x_pos: [],
@@ -64,8 +67,11 @@ function newGame() {
     allSprites.visible = true;
 }
 
-// Initialises the player variables, it's animations and various colliders
+// Initialises the player variables, it's animations and various colliders.
+// Player is never removed from the scene with .remove() so this is only
+// ever called once
 function initialisePlayer() {
+    // Initialise player variables
     Player = new Sprite();
     Player.img = player_sprite;
     Player.collider = 'k';
@@ -83,12 +89,13 @@ function initialisePlayer() {
     Player.jumping = false;
     Player.respawn = [];
 
+    // Creates custom collider that is slightly smaller than the original
     Player.removeColliders()
     Player.addCollider(1, 7, 10, 15)
 
+    // Animations
     Player.spriteSheet = 'Sprites/Player/player_sprite_sheet.png'
     Player.anis.frameDelay = 10
-
     Player.addAnis({
         idle: { width: 32, height: 32, y: 0, frames: 1, frameDelay: 0 },
         run: { width: 32, height: 32, x: 32, y: 0, frames: 5, frameDelay: 0 },
@@ -99,6 +106,9 @@ function initialisePlayer() {
     });
     Player.changeAni('idle')
 
+    // Three sprites that act as colliders on the left, right and bottom
+    // of the player the hit box sprite is a smaller rectangle and all 
+    // are glued to the player
     player_collider_bottom = new Sprite();
     player_collider_bottom.collider = 'n'
     player_collider_bottom.w = Player.hw;
@@ -163,7 +173,7 @@ function initialiseTiles() {
     WallTiles.colour = 0;
 }
 
-// Creates all the obstacle groups (they should probably be seperate but it's fine)
+// Creates all the obstacle groups, RollingRocks, Spikes and Icicles
 function initialiseObstacles() {
     RollingRocks = new Group();
     RollingRocks.img = rolling_rock_sprite;
@@ -180,7 +190,8 @@ function initialiseObstacles() {
     Icicles.img = icicle_sprite_3;
 }
 
-// Creates the CheckPoints group (sometimes to refered to as flags)
+// Creates the CheckPoints group (sometimes to refered to as flags) and 
+// adds their animation
 function initialiseCheckPoints() {
     CheckPoints = new Group();
     CheckPoints.collider = 'n';
@@ -201,7 +212,8 @@ function initialiseBoundaries() {
 }
 
 // Creates Platforms group, all the platforms that are one way (you can jump up
-// though them but not down) are part of this group
+// though them but not down) are part of this group as well as the clouds and 
+// outcrops
 function initialisePlatforms() { 
     Platforms = new Group();
     Platforms.collider = 'n';
@@ -227,7 +239,8 @@ function spawnCheckPoints() {
     }
 }
 
-// Spawns the current level obstacles, currently just rocks and icicles
+// Spawns the current level obstacles, only for rocks and icicles, spikes are
+// done seperately
 function spawnObstacles() {
     for (i = 0; i < current_stage_json.objects.obstacles.length; i++) {
         let jsonData = getObstacle(i)
@@ -263,8 +276,8 @@ function spawnObstacles() {
 
 // Gets tilemap data from current level JSON data and creates the "blocks". Works
 // well, tilemap can be extended infinitely and it will still load properly.
-// The appearance of each tile is set with characters in the tilemap n, e, s, w are 
-// the cardinal directions and refer to orientation capitals are variations (usually 
+// The appearance of each tile is set with characters in the tilemap N, E, S, W are 
+// the cardinal directions and refer to orientation lowercase are variations (usually 
 // means rotated 45 degress clockwise so n would be a north east corner), I ran out 
 // of letters after that so u, d, l, r for up, down, left, right but they work in the 
 // same way, with capitals for filled versions.
@@ -396,7 +409,9 @@ function getObstacle(index) {
     return obstacle_;
 }
 
-// Spawns spike sprites from JSON, also handles orientation
+// Spawns spike sprites from JSON, also handles orientation by rotating even 
+// though p5play does a terrible job of this and I should of just rotated them
+// and exported as seperate images
 function spawnSpikes() {
     for (i = 0; i < current_stage_json.objects.spikes.length; i++) {
         let spike_ = new Spikes.Sprite();
@@ -433,7 +448,7 @@ function spawnFruits() {
 }
 
 // Spawns the platform sprites, includes the wooden platforms, moving 
-// clouds and the ending oremoveAll();utcrop platform
+// clouds and the ending outcrop platform
 function spawnPlatforms() {
     for (i = 0; i < current_stage_json.objects.platforms.length; i++) {
         let platform_ = new Platforms.Sprite();
@@ -516,7 +531,7 @@ function spawnPlayer(x, y) {
 }
 
 // Puts the player in cyrostasis (Because the player cannot actually be
-// removed from the scene it will fall indefinitely and eventually despawn
+// removed from the scene, it will fall indefinitely and eventually despawn
 // when it reaches 10000 pixels below the camera and this fixes it by making
 // invisible but locked to the screen to prevent actual despawning)
 function despawnPlayer() {
@@ -599,7 +614,8 @@ function movePlayer() {
 }
 
 // Applies an upward force if the player has not yet reached their maximum
-// consecutive jumps value and also updates that value
+// consecutive jumps value and also updates that value, also plays the jump
+// sound
 function playerJump() {
     if (Player.touchingWall == true) {
         if (player_collider_left.overlapping(Tiles) && Player.holdingWall == true) {
@@ -702,7 +718,9 @@ function boundaryCheck() {
     }
 }
 
-// Detects player activating flags and dying to various obstacles
+// Detects player activating flags and dying to various obstacles, 
+// automatically detects if the activated flag is the last one in the 
+// stage and will trigger the end of the level when that happens
 function collisionDetection() {
     for (i = 0; i < current_stage_json.objects.flags.length; i++) {
         if (player_hit_box.overlaps(CheckPoints[i])) {
@@ -774,8 +792,8 @@ function movePlatforms() {
     }
 }
 
-// Triggers at the completion of a level and begins the transition
-// onto the next
+// Triggers at the completion of a level, updates variables and 
+// transitions into the level complete scene
 function levelComplete(level) {
     Game.current_level = level + 1;
     Game.saves[0].current_level = level + 1;
@@ -788,26 +806,28 @@ function levelComplete(level) {
 // the 5 cloud sprites
 function initialiseAtmosphere() {
     for (i = 0; i < 6; i++) {
-        let n = round(random(4))
-        let m = round(random(256))
-        if (m % 2 == 0) {
-            m = m * -1
+        let sprite_ = round(random(4))
+        let x_value_ = round(random(256))
+        if (x_value_ % 2 == 0) {
+            x_value_ = x_value_ * -1
         }
-        Clouds.sprite[i] = n
-        Clouds.x_pos[i] = m
+        Clouds.sprite[i] = sprite_
+        Clouds.x_pos[i] = x_value_
     }
 }
 
 // Resets the position of the cloud in position [index] of
 // the cloud array
 function resetCloud(index) {
-    let n = round(random(100)) - 200;
-    let m = round(random(4))
-    Clouds.x_pos[index] = n
-    Clouds.sprite[index] = m
+    let x_pos_ = round(random(100)) - 200;
+    let sprite_ = round(random(4))
+    Clouds.x_pos[index] = x_pos_
+    Clouds.sprite[index] = sprite_
 }
 
-// Returns the character at the parameter value in the tilemap
+// Returns the character at the parameter value in the tilemap,
+// index 0 starts at the bottom right corner of the tilemap and
+// goes to the right and then up
 function getTile(index) { 
     let pos = getGridPosition(index);
     rowPos = pos.y
@@ -817,8 +837,10 @@ function getTile(index) {
     return tile;
 }
 
-// Returns the row, column / x , y values of the tile at the 
-// index parameter
+
+// Returns the position (world coordinates) of the tile
+// at the index parameter, from the currently loaded 
+// JSON file
 function getTilePosition(index) { 
     let pos = getGridPosition(index)
 
@@ -828,8 +850,9 @@ function getTilePosition(index) {
     return { x: colPos, y : rowPos }
 }
 
-// Returns the grid position (world coordinates) of the tile
-// at the index parameter
+// Returns the column / row (x / y) coordinates of the 
+// tile at position at the index paramater in grid space,
+// taken from the currently loaded JSON file
 function getGridPosition(index) {
     let colPos, rowPos;
     let rowLength = current_stage_json.tilemap[0].length;
@@ -840,7 +863,7 @@ function getGridPosition(index) {
     return { x: colPos, y: rowPos}
 }
 
-// Activates the index value checkpoint and sets the player's
+// Activates the index parameter checkpoint and sets the player's
 // respawn to it, also triggers the camera to move and change
 // it's mode (static, follow)
 function activateCheckpoint(index) {
@@ -854,15 +877,17 @@ function activateCheckpoint(index) {
     }
 }
 
-// Kills and then respawns the player
-function killPlayer() {
-    // do some sort of death anim / respawn timer
-    // also could do different death types so like falling / spikes should be different
+// Kills and then respawns the player after 1 second
+async function killPlayer() {
+    Player.visible = false;
+    await sleep(1000);
     respawnPlayer();
 }
 
 // Resets the player position to it's respawn coordinates
+// and resets the camera
 function respawnPlayer() {
+    Player.visible = true;
     Player.x = Player.respawn[0];
     Player.y = Player.respawn[1];
     camera.y = Game.camera_cache;
@@ -888,6 +913,10 @@ function updateCamera() {
     }
 }
 
+// Detects when to reset an obstacle, for rocks its when it collides
+// with a boundary, spikes or the player. For Icicles it's when it hits 
+// the player or the floor. It also removes obstacles from the scene
+// after the Player has passed it's y value
 function obstacleDetection() { // fix detection in the negative y positions
     for (i = 0; i < RollingRocks.length; i++) {
         if (Player.y - RollingRocks[i].y > RollingRocks[i].radius) {
@@ -919,12 +948,18 @@ function obstacleDetection() { // fix detection in the negative y positions
     }
 }
 
+// Moves a rolling rock by making it's collider dynamic, as
+// apposed to it's resting static collider.
 async function triggerRollingRock(index) {
     RollingRocks[index].on_cooldown = true;
     RollingRocks[index].falling = true;
     RollingRocks[index].collider = 'd';
 }
 
+// Moves the index parameter icicle, plays its animation (it's 
+// actually not an aniamtion it just changes images) and then
+// after a delay it falls. The collider also changes to match
+// it's current image
 async function triggerIcicle(index) { 
     Icicles[index].on_cooldown = true;
     Icicles[index].img = icicle_sprite_2;
