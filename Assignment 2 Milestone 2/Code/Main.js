@@ -13,6 +13,16 @@
    image definitions, input data, settings and manages scenes*/
 /////////////////////////////////////////////////////////////////////////////////
 
+// fix clouds spawning on screen
+// Idea to count save stats so like count jumps / deaths etc -- would satisfy the leaderboard requirement i think ?
+// try to find a way to make the text clearer (stroke ?)
+// falling icicles, fruit, rolling rocks -- have to load anim for icicle
+// fix sprite rotations bugging out
+// make loading screens actually functional
+// fix lag /memory leaks -- the longer the program is running the worse the fps is
+// remove rocks when spawn is on screen
+
+
 // Canvas variables
 const CANVASWIDTH = 256;
 const CANVASHEIGHT = 256;
