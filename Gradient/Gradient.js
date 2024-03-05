@@ -14,7 +14,7 @@ let border = 0;
 
 let magnitude = 1;
 
-let numberOfLines = 256;
+let numberOfLines = 512;
 
 let  effectiveCanvasWidth = CANVAS_W - (border * 2);
 
@@ -24,7 +24,7 @@ let heightMinimum, heightMaximum, slopeMaximum;
 
 let strokeThickness = 3;
 
-let slopeChange = 10;
+let slopeChange = 30; // How steep the slopes are
 
 let height, slope;
 

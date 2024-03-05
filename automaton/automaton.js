@@ -1,3 +1,12 @@
+/** 
+ * Simple js implementation of Conway's game of life using the 
+ * p5 library. Initial state can be a set number of cells in the 
+ * center or fully randomised across the whole grid based on a 
+ * density value. Next step would be to add multiple states and
+ * more complex rule sets.
+ */
+
+
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 800;
 
@@ -9,6 +18,8 @@ let cell_size = 4;
 let columns, rows;
 
 let generation = 0;
+
+let paused = false;
 
 class Cell {
 	state = 0;
@@ -22,26 +33,30 @@ class Cell {
 
 function setup() {
   	createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-	frameRate(20); // struggles to go any higher
+	frameRate(60); // struggles to go any higher than 20
   	columns = width / cell_size;
 	rows = height / cell_size;
   	grid = initialiseGrid(columns, rows);
 	randomiseStartingCells(16);
+	//fullyRandomiseStartingCells();
 }
 
 function draw() {
-  	background(BACKGROUND_COLOUR);
+	if (paused == false) {
+		background(BACKGROUND_COLOUR);
+	
 
-  	drawGrid();
-  
-	if (frameCount % (60 / generations_per_second) == 0) {
-		nextGeneration();
+		drawGrid();
+		if (frameCount % (60 / generations_per_second) == 0) {
+			nextGeneration();
+		}
+
+		stroke(255);
+		fill(255);
+		text("Generation: " + paused, 10, 10);
+		text("fps: " + round(frameRate()), 10, 20)		
 	}
 
-	stroke(255);
-	fill(255);
-	text("Generation: " + generation, 10, 10);
-	text("fps: " + round(frameRate()), 10, 20)
 }
 
 function initialiseGrid(cols, rows) {
@@ -81,16 +96,13 @@ function clearGrid() {
 }
 
 function nextGeneration() {
-let next_generation = grid;
+	let next_generation = initialiseGrid(columns, rows);
 
-	for (let i = 1; i < columns -1; i++) {
-		for (let j = 1; j < rows -1; j++) {
-
-			// 0 = dead 1 = alive
-			let state = next_generation[i][j];
-			if (checkBorder(i, j) === false) {
+	for (let i = 0; i < columns; i++) {
+		for (let j = 0; j < rows; j++) {
+			if (checkBorder(i, j) === false) { // stops errors from checking outside the grid
 				let neighbors = getLiveNeighbors(i, j);	
-				if (state === 1) {
+				if (grid[i][j] == 1) {
 					if (neighbors < 2) {
 						next_generation[i][j] = 0;
 					} else if (neighbors === 2 || neighbors === 3) {
@@ -98,11 +110,11 @@ let next_generation = grid;
 					} else if (neighbors > 3) {
 						next_generation[i][j] = 0;
 					}
-				} if (state === 0) {
+				} else if (grid[i][j] == 0) {
 					if (neighbors === 3) {
 						next_generation[i][j] = 1;
 					}
-				}	
+				}
 			} else {
 				next_generation[i][j] = 0;
 			}
@@ -113,7 +125,7 @@ let next_generation = grid;
 }
 
 function checkBorder(column, row) {
-	if (column + 1 > columns || column - 1 < 0 || row + 1 > rows || row - 1 < 0) {
+	if (column + 1 >= columns || column - 1 <= 0 || row + 1 >= rows || row - 1 <= 0) {
 		return true;
 	} else {
 		return false;
@@ -139,9 +151,6 @@ function getLiveNeighbors(column, row) {
 	} if (grid[column - 1][row] === 1) {
 		live_neighbors++;
 	}
-	if (live_neighbors > 1) {
-		console.log("working");
-	}
 	return live_neighbors;
 }
 
@@ -156,6 +165,14 @@ function randomiseStartingCells(number_of_cells) {
 		} else {
 			grid[CANVAS_HEIGHT / cell_size / 2 + offset_y][CANVAS_WIDTH / cell_size / 2 + offset_x] = 1;
 			created_cells++;
+		}
+	}
+}
+
+function fullyRandomiseStartingCells() {
+	for (let i = 0; i < columns; i++) {
+		for (let j = 0; j < rows; j++) {
+			grid[i][j] = round(random(0.55));
 		}
 	}
 }
@@ -178,4 +195,22 @@ loop3:
 		}
 	}
 	return true;
+}
+
+function reset() {
+	clearGrid();
+	fullyRandomiseStartingCells();
+}
+
+function keyPressed() {
+	if (keyCode == 32) {
+		if (paused == false) {
+			paused = true;
+		} else {
+			paused = false;
+		}
+	} 
+	if (keyCode == 114) {
+		reset();
+	}
 }
