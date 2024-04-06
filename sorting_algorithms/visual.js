@@ -8,14 +8,18 @@ let cooldown = 5; // frames between sorts
 let sorted = false;
 let attempts = 0;
 
+let algorithm;
+
 function setup() {
 	createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-	values = generateRandomArray(96);
+	values = generateRandomArray(128);
 	column_size = CANVAS_WIDTH / values.length;
 
-	stroke(255);
+	stroke(240);
 	textSize(50);
-	fill(255);
+	fill(240);
+	
+	algorithm = new QuickSort;
 }
 
 function draw() {
@@ -24,7 +28,7 @@ function draw() {
 		text(attempts, 10, 40)
 
 		if (frameCount % cooldown == 0) {
-			values = bubbleSort(values);
+			values = algorithm.sort(values);
 			attempts++;
 		}
 
@@ -69,14 +73,23 @@ function check() {
 
 function generateRandomArray(size) {
 	let array_ = []
-	for (let i = 0; i < size; i++) {
-		let r = random(1);
-		if (r < 0.5) {
-			array_.push(i);
-		} else {
-			array_.unshift(i);
+	for (let i = 0; i < size; i++) array_[i] = i;
+
+	let temp, current, top = array_.length;
+	if(top) {
+		while(--top) {
+			current = Math.floor(Math.random() * (top + 1));
+			temp = array_[current];
+			array_[current] = array_[top];
+			array_[top] = temp;
 		}
 	}
+
 	return array_;
 }
 
+function updateCursor(x) {
+	// should point to the current point being evaluated, might not work currently becuase of for loops
+	fill(255, 0, 0);
+	rect(x, 0, column_size, CANVAS_HEIGHT)
+}
