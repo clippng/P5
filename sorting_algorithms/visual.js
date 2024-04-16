@@ -1,14 +1,10 @@
+/**
+ * Contains the main p5.js functions and is responsible 
+ * for drawing the current state of the data to the canvas
+ */
+
 const CANVAS_HEIGHT = 540;
 const CANVAS_WIDTH = 960;
-
-let values = []; // values to be sorted
-let column_size;
-
-let cooldown = 5; // frames between sorts
-let sorted = false;
-let attempts = 0;
-
-let algorithm;
 
 function setup() {
 	createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT)
@@ -38,7 +34,7 @@ function draw() {
 			rect(i * column_size, CANVAS_HEIGHT, column_size, normalised_values[i] * -1);
 		}
 	
-		if (check() == true) {
+		if (checkSorted(values) == true) {
 			sorted = true;
 			noLoop();
 		} 
@@ -47,49 +43,3 @@ function draw() {
 
 }
 
-// maps array to the canvas dimensions
-function normalise(array) {
-	let max_ = max(array) + 1;
-	let min_ = min(array) - 1;
-
-	let normalised_array = [];
-
-	for (let i = 0; i < array.length; i++) {
-		normalised_array[i] = map(array[i], min_, max_, 0, CANVAS_HEIGHT, true);
-	}
-
-	return normalised_array;
-}
-
-// checks if values[] is sorted, returns true if it is and false if it isn't
-function check() { 
-	for (let i = 1; i < values.length; i++) {
-		if (values[i] < values[i - 1]) {
-			return false;
-		} 
-	}
-	return true;
-}
-
-function generateRandomArray(size) {
-	let array_ = []
-	for (let i = 0; i < size; i++) array_[i] = i;
-
-	let temp, current, top = array_.length;
-	if(top) {
-		while(--top) {
-			current = Math.floor(Math.random() * (top + 1));
-			temp = array_[current];
-			array_[current] = array_[top];
-			array_[top] = temp;
-		}
-	}
-
-	return array_;
-}
-
-function updateCursor(x) {
-	// should point to the current point being evaluated, might not work currently becuase of for loops
-	fill(255, 0, 0);
-	rect(x, 0, column_size, CANVAS_HEIGHT)
-}
