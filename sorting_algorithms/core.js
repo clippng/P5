@@ -3,17 +3,45 @@
  * unsorted arrays and other calculation functions
  */
 
-let values = []; // values to be sorted
-let column_size;
+let instance;
 
-let cooldown = 5; // frames between sorts
-let sorted = false;
-let attempts = 0;
+class Instance {
+	values = [];
+	column_size;
+	algorithm;
+	frames = 0;
+	sorted = false;
+	cursor = [];
 
-let algorithm;
+	constructor(values_, algorithm_) {
+		this.values = values_;
+		this.algorithm = new algorithm_
+		this.column_size = CANVAS_WIDTH / this.values.length;
+	}  
 
-const Core = {
+	checkSorted() { 
+		for (let i = 1; i < this.values.length; i++) {
+			if (this.values[i] < this.values[i - 1]) {
+				return false;
+			}
+		}
+		return true; 
+	}
 
+	update() {
+		this.cursor = [];
+		this.frames++;
+		let data = this.algorithm.sort(instance.values);
+		this.values = data.values;
+		this.cursor = data.cursor;
+	}
+
+	highlight(columns) {
+		fill(255, 0, 0);
+		for (let i = 0; i < columns.length; i++) {
+			rect(columns[i], 0, this.column_size, CANVAS_HEIGHT)
+		}
+	}
 };
 
 /**
@@ -38,26 +66,10 @@ function normalise(array) {
 }
 
 /**
- * Checks if an array is in numerical order
- * 
- * @param {int[]} array an array to be examined
- * 
- * @returns true when the array is sorted and false in 
- * all other cases
- */
-function checkSorted(array) { 
-	for (let i = 1; i < array.length; i++) {
-		if (array[i] < array[i - 1]) {
-			return false;
-		} 
-	}
-	return true;
-}
-
-/**
- * 
- * @param {*} size 
- * @returns 
+ * Generates an unordered array of sequential integers
+ * of size n and returns it
+ * @param {int} size the size of the array to be generated
+ * @returns the generated array
  */
 function generateRandomArray(size) {
 	let array_ = []
@@ -80,7 +92,11 @@ function generateRandomArray(size) {
 function update() {
 
 }
-
+/**
+ * Should be called each frame with the x position of the value currently 
+ * being evaluated
+ * @param {int} x 
+ */
 function updateCursor(x) {
 	// should point to the current point being evaluated, might not work currently becuase of for loops
 	fill(255, 0, 0);

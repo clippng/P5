@@ -1,15 +1,19 @@
 class BubbleSort {
-	async sort(values) {
+	sort(values) {
 		let temp;
+		let data
 		for (let i = 0; i < values.length - 1; i++) {
-			await sleep(10);
 			if (values[i] > values[i + 1]) {
 				temp = values[i];
 				values[i] = values[i + 1];
 				values[i + 1] = temp;
+
+				return data = {
+					values: values, 
+					cursor: [values[30]]
+				};
 			}
 		}
-		return values;
 	}
 };
 
