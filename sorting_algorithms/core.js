@@ -87,18 +87,3 @@ function generateRandomArray(size) {
 
 	return array_;
 }
-
-// 
-function update() {
-
-}
-/**
- * Should be called each frame with the x position of the value currently 
- * being evaluated
- * @param {int} x 
- */
-function updateCursor(x) {
-	// should point to the current point being evaluated, might not work currently becuase of for loops
-	fill(255, 0, 0);
-	rect(x, 0, column_size, CANVAS_HEIGHT)
-}
