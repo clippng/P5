@@ -78,7 +78,7 @@ function generateRandomArray(size) {
 	let temp, current, top = array_.length;
 	if(top) {
 		while(--top) {
-			current = Math.floor(Math.random() * (top + 1));
+			current = floor(random() * (top + 1));
 			temp = array_[current];
 			array_[current] = array_[top];
 			array_[top] = temp;
