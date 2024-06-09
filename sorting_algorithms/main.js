@@ -27,11 +27,6 @@ function draw() {
 
 		for (let i = 0; i < instance.values.length; i++) {
 			fill(255);
-			for (let j = 0; j < instance.cursor.length; j++) {
-				if (instance.cursor[j] == instance.values[j]) {
-					fill(255, 0, 0);
-				}
-			}
 			rect(i * instance.column_size, CANVAS_HEIGHT, instance.column_size, normalised_values[i] * -1);
 		}
 	

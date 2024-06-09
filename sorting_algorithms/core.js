@@ -3,15 +3,12 @@
  * unsorted arrays and other calculation functions
  */
 
-let instance;
-
 class Instance {
 	values = [];
 	column_size;
 	algorithm;
 	frames = 0;
 	sorted = false;
-	cursor = [];
 
 	constructor(values_, algorithm_) {
 		this.values = values_;
@@ -29,18 +26,8 @@ class Instance {
 	}
 
 	update() {
-		this.cursor = [];
 		this.frames++;
-		let data = this.algorithm.sort(instance.values);
-		this.values = data.values;
-		this.cursor = data.cursor;
-	}
-
-	highlight(columns) {
-		fill(255, 0, 0);
-		for (let i = 0; i < columns.length; i++) {
-			rect(columns[i], 0, this.column_size, CANVAS_HEIGHT)
-		}
+		this.values = this.algorithm.sort(this.values);
 	}
 };
 
